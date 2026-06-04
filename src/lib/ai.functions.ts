@@ -6,12 +6,13 @@ type GeneratedWord = {
   translation_uz: string;
   ipa: string;
   example: string;
+  example_uz: string;
   explanation: string;
   synonyms: string[];
   antonyms: string[];
 };
 
-const SYSTEM_PROMPT = `You are an English-to-Uzbek vocabulary tutor. For a given English word, return concise structured data: an Uzbek translation, IPA pronunciation, a short example sentence (max 14 words), a one-sentence beginner-friendly explanation in English, plus up to 3 synonyms and 3 antonyms. Be accurate and natural.`;
+const SYSTEM_PROMPT = `You are an English-to-Uzbek vocabulary tutor. For a given English word, return concise structured data: an Uzbek translation, IPA pronunciation, a short English example sentence (max 14 words), an Uzbek translation of that exact example sentence, a one-sentence beginner-friendly explanation in Uzbek, plus up to 3 synonyms and 3 antonyms (English). Be accurate and natural.`;
 
 export const generateWordData = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -53,11 +54,12 @@ export const generateWordData = createServerFn({ method: "POST" })
                     translation_uz: { type: "string" },
                     ipa: { type: "string" },
                     example: { type: "string" },
+                    example_uz: { type: "string" },
                     explanation: { type: "string" },
                     synonyms: { type: "array", items: { type: "string" } },
                     antonyms: { type: "array", items: { type: "string" } },
                   },
-                  required: ["translation_uz", "ipa", "example", "explanation", "synonyms", "antonyms"],
+                  required: ["translation_uz", "ipa", "example", "example_uz", "explanation", "synonyms", "antonyms"],
                   additionalProperties: false,
                 },
               },
@@ -69,8 +71,8 @@ export const generateWordData = createServerFn({ method: "POST" })
 
       if (!resp.ok) {
         const text = await resp.text();
-        if (resp.status === 429) throw new Error("Rate limit reached. Try again shortly.");
-        if (resp.status === 402) throw new Error("AI credits exhausted. Add credits in workspace settings.");
+        if (resp.status === 429) throw new Error("So'rovlar limiti tugadi. Birozdan keyin urinib ko'ring.");
+        if (resp.status === 402) throw new Error("AI kreditlar tugadi. Workspace sozlamalaridan to'ldiring.");
         console.error("AI gateway error", resp.status, text);
         continue;
       }
@@ -85,7 +87,7 @@ export const generateWordData = createServerFn({ method: "POST" })
       }
     }
 
-    if (results.length === 0) throw new Error("AI did not return any usable results");
+    if (results.length === 0) throw new Error("AI hech qanday natija qaytarmadi");
 
     const rows = results.map((r) => ({
       user_id: userId,
@@ -93,6 +95,7 @@ export const generateWordData = createServerFn({ method: "POST" })
       translation_uz: r.translation_uz,
       ipa: r.ipa,
       example: r.example,
+      example_uz: r.example_uz,
       explanation: r.explanation,
       synonyms: r.synonyms?.slice(0, 5) ?? [],
       antonyms: r.antonyms?.slice(0, 5) ?? [],

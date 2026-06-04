@@ -3,17 +3,22 @@ import { Home, Plus, Heart, Brain, User } from "lucide-react";
 
 type Item = { to: string; label: string; icon: typeof Home; primary?: boolean };
 const items: Item[] = [
-  { to: "/feed", label: "Feed", icon: Home },
-  { to: "/favorites", label: "Saved", icon: Heart },
-  { to: "/add", label: "Add", icon: Plus, primary: true },
-  { to: "/quiz", label: "Quiz", icon: Brain },
-  { to: "/profile", label: "Me", icon: User },
+  { to: "/feed", label: "Lenta", icon: Home },
+  { to: "/favorites", label: "Saqlangan", icon: Heart },
+  { to: "/add", label: "Qo'shish", icon: Plus, primary: true },
+  { to: "/quiz", label: "Test", icon: Brain },
+  { to: "/profile", label: "Men", icon: User },
 ];
+
+export const NAV_HEIGHT = 72; // px
 
 export function BottomNav() {
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-background/80 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-md items-center justify-around px-2 py-2">
+    <nav
+      style={{ height: NAV_HEIGHT }}
+      className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-background/85 backdrop-blur-xl"
+    >
+      <div className="mx-auto flex h-full max-w-md items-center justify-around px-2">
         {items.map((item) => (
           <Link
             key={item.to}
