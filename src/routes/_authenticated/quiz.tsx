@@ -1,15 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { Brain, Check, X, Trophy, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 type W = { id: string; word: string; translation_uz: string | null };
-
 type Q = { word: string; correct: string; choices: string[] };
 
 export const Route = createFileRoute("/_authenticated/quiz")({
-  head: () => ({ meta: [{ title: "Quiz — VocabFlow" }] }),
+  head: () => ({ meta: [{ title: "Test — VocabFlow" }] }),
   component: Quiz,
 });
 
@@ -59,18 +59,18 @@ function Quiz() {
   };
 
   if (questions === null) {
-    return <div className="flex h-[100dvh] items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
+    return <div className="flex h-[calc(100dvh-72px)] items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
   }
 
   if (questions.length === 0) {
     return (
-      <div className="flex h-[100dvh] flex-col items-center justify-center px-6 text-center">
+      <div className="flex h-[calc(100dvh-72px)] flex-col items-center justify-center px-6 text-center">
         <div className="grid h-16 w-16 place-items-center rounded-3xl bg-gradient-brand shadow-glow">
           <Brain className="h-8 w-8 text-white" />
         </div>
-        <h2 className="mt-6 text-2xl font-bold">Need more words</h2>
-        <p className="mt-2 max-w-xs text-sm text-muted-foreground">Add at least 4 words to unlock quiz mode.</p>
-        <Link to="/add" className="mt-6 rounded-full bg-gradient-brand px-6 py-3 text-sm font-semibold text-white shadow-glow">Add words</Link>
+        <h2 className="mt-6 text-2xl font-bold">Ko'proq so'z kerak</h2>
+        <p className="mt-2 max-w-xs text-sm text-muted-foreground">Testni boshlash uchun kamida 4 ta so'z qo'shing.</p>
+        <Link to="/add" className="mt-6 rounded-full bg-gradient-brand px-6 py-3 text-sm font-semibold text-white shadow-glow">So'z qo'shish</Link>
       </div>
     );
   }
@@ -78,20 +78,20 @@ function Quiz() {
   if (done) {
     const pct = Math.round((score / questions.length) * 100);
     return (
-      <div className="flex h-[100dvh] flex-col items-center justify-center px-6 text-center">
+      <div className="flex h-[calc(100dvh-72px)] flex-col items-center justify-center px-6 text-center">
         <div className="grid h-20 w-20 place-items-center rounded-[2rem] bg-gradient-brand shadow-glow">
           <Trophy className="h-10 w-10 text-white" />
         </div>
         <h2 className="mt-6 text-3xl font-extrabold">{score}/{questions.length}</h2>
-        <p className="mt-1 text-lg text-muted-foreground">{pct}% correct</p>
+        <p className="mt-1 text-lg text-muted-foreground">{pct}% to'g'ri</p>
         <div className="mt-8 flex gap-3">
           <button
             onClick={() => { setQuestions(null); setIdx(0); setScore(0); setPicked(null); setDone(false); window.location.reload(); }}
             className="rounded-full bg-gradient-brand px-6 py-3 text-sm font-semibold text-white shadow-glow"
           >
-            Play again
+            Yana o'ynash
           </button>
-          <Link to="/profile" className="rounded-full border border-border px-6 py-3 text-sm font-semibold">See stats</Link>
+          <Link to="/profile" className="rounded-full border border-border px-6 py-3 text-sm font-semibold">Statistika</Link>
         </div>
       </div>
     );
@@ -115,17 +115,20 @@ function Quiz() {
   };
 
   return (
-    <div className="mx-auto max-w-md px-5 pt-10">
+    <div className="mx-auto max-w-md px-5 pt-10 pb-24">
       <div className="flex items-center justify-between text-sm text-muted-foreground">
-        <span>Question {idx + 1} of {questions.length}</span>
-        <span>Score {score}</span>
+        <span>Savol {idx + 1} / {questions.length}</span>
+        <div className="flex items-center gap-3">
+          <span>Hisob: {score}</span>
+          <ThemeToggle />
+        </div>
       </div>
       <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
         <div className="h-full bg-gradient-brand transition-all" style={{ width: `${((idx + 1) / questions.length) * 100}%` }} />
       </div>
 
-      <div className="mt-10 rounded-3xl bg-gradient-card p-8 text-center text-white shadow-glow">
-        <p className="text-xs uppercase tracking-wider text-white/70">Translate to Uzbek</p>
+      <div className="mt-8 rounded-3xl bg-gradient-card p-8 text-center text-white shadow-glow">
+        <p className="text-xs uppercase tracking-wider text-[var(--brand-2)]">O'zbekchaga tarjima qiling</p>
         <h2 className="mt-3 text-4xl font-extrabold">{q.word}</h2>
       </div>
 

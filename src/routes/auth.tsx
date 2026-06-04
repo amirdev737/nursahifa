@@ -2,11 +2,12 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { toast } from "sonner";
 import { Sparkles, Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/auth")({
-  head: () => ({ meta: [{ title: "Sign in — VocabFlow" }] }),
+  head: () => ({ meta: [{ title: "Kirish — VocabFlow" }] }),
   component: AuthPage,
 });
 
@@ -37,14 +38,14 @@ function AuthPage() {
           },
         });
         if (error) throw error;
-        toast.success("Account created! You're in.");
+        toast.success("Akkaunt yaratildi!");
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       }
       navigate({ to: "/feed" });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Auth failed");
+      toast.error(err instanceof Error ? err.message : "Kirishda xatolik");
     } finally {
       setLoading(false);
     }
@@ -60,6 +61,7 @@ function AuthPage() {
 
   return (
     <div className="min-h-screen bg-background bg-mesh">
+      <ThemeToggle className="fixed right-4 top-4 z-40" />
       <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6 py-10">
         <Link to="/" className="mb-8 inline-flex items-center gap-2">
           <div className="grid h-9 w-9 place-items-center rounded-2xl bg-gradient-brand shadow-glow">
@@ -69,9 +71,9 @@ function AuthPage() {
         </Link>
 
         <div className="rounded-3xl border border-border bg-card/80 p-7 shadow-soft backdrop-blur">
-          <h1 className="text-2xl font-bold">{mode === "signin" ? "Welcome back" : "Create account"}</h1>
+          <h1 className="text-2xl font-bold">{mode === "signin" ? "Xush kelibsiz" : "Akkaunt yaratish"}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            {mode === "signin" ? "Sign in to continue learning." : "Start your vocabulary journey."}
+            {mode === "signin" ? "Davom etish uchun tizimga kiring." : "So'z boyligi sayohatingizni boshlang."}
           </p>
 
           <button
@@ -79,17 +81,17 @@ function AuthPage() {
             disabled={loading}
             className="mt-6 flex w-full items-center justify-center gap-3 rounded-2xl border border-border bg-background py-3 text-sm font-semibold transition hover:bg-accent disabled:opacity-50"
           >
-            <GoogleIcon /> Continue with Google
+            <GoogleIcon /> Google bilan davom etish
           </button>
 
           <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
-            <div className="h-px flex-1 bg-border" /> or email <div className="h-px flex-1 bg-border" />
+            <div className="h-px flex-1 bg-border" /> yoki email <div className="h-px flex-1 bg-border" />
           </div>
 
           <form onSubmit={handleEmail} className="space-y-3">
             {mode === "signup" && (
               <input
-                type="text" placeholder="Your name" value={name} onChange={(e) => setName(e.target.value)}
+                type="text" placeholder="Ismingiz" value={name} onChange={(e) => setName(e.target.value)}
                 className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-ring"
               />
             )}
@@ -98,7 +100,7 @@ function AuthPage() {
               className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-ring"
             />
             <input
-              type="password" required minLength={6} placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)}
+              type="password" required minLength={6} placeholder="Parol" value={password} onChange={(e) => setPassword(e.target.value)}
               className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-ring"
             />
             <button
@@ -106,7 +108,7 @@ function AuthPage() {
               className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-brand py-3 text-sm font-semibold text-white shadow-glow transition hover:scale-[1.01] disabled:opacity-60"
             >
               {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-              {mode === "signin" ? "Sign in" : "Create account"}
+              {mode === "signin" ? "Kirish" : "Akkaunt yaratish"}
             </button>
           </form>
 
@@ -114,7 +116,7 @@ function AuthPage() {
             onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
             className="mt-5 w-full text-center text-sm text-muted-foreground hover:text-foreground"
           >
-            {mode === "signin" ? "No account? Sign up" : "Have an account? Sign in"}
+            {mode === "signin" ? "Akkauntingiz yo'qmi? Ro'yxatdan o'ting" : "Akkauntingiz bormi? Kiring"}
           </button>
         </div>
       </div>

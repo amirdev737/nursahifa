@@ -1,10 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { LogOut, BookOpen, Heart, Trophy, Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/profile")({
-  head: () => ({ meta: [{ title: "Profile — VocabFlow" }] }),
+  head: () => ({ meta: [{ title: "Profil — VocabFlow" }] }),
   component: Profile,
 });
 
@@ -22,7 +23,7 @@ function Profile() {
       if (!user) return;
       setEmail(user.email ?? "");
       const { data: prof } = await supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle();
-      setName(prof?.display_name ?? user.email?.split("@")[0] ?? "Learner");
+      setName(prof?.display_name ?? user.email?.split("@")[0] ?? "O'quvchi");
 
       const [{ count: totalWords }, { count: favorites }, { data: quizzes }] = await Promise.all([
         supabase.from("words").select("*", { count: "exact", head: true }),
@@ -42,15 +43,18 @@ function Profile() {
   };
 
   return (
-    <div className="mx-auto max-w-md px-5 pt-12">
-      <div className="flex items-center gap-4">
-        <div className="grid h-16 w-16 place-items-center rounded-2xl bg-gradient-brand text-2xl font-bold text-white shadow-glow">
-          {(name?.[0] ?? "?").toUpperCase()}
+    <div className="mx-auto max-w-md px-5 pt-10 pb-24">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className="grid h-16 w-16 place-items-center rounded-2xl bg-gradient-brand text-2xl font-bold text-white shadow-glow">
+            {(name?.[0] ?? "?").toUpperCase()}
+          </div>
+          <div className="min-w-0">
+            <h1 className="truncate text-2xl font-bold">{name}</h1>
+            <p className="truncate text-sm text-muted-foreground">{email}</p>
+          </div>
         </div>
-        <div className="min-w-0">
-          <h1 className="truncate text-2xl font-bold">{name}</h1>
-          <p className="truncate text-sm text-muted-foreground">{email}</p>
-        </div>
+        <ThemeToggle />
       </div>
 
       {stats === null ? (
@@ -58,17 +62,17 @@ function Profile() {
       ) : (
         <>
           <div className="mt-8 grid grid-cols-2 gap-3">
-            <Stat icon={BookOpen} label="Words" value={stats.totalWords} />
-            <Stat icon={Heart} label="Favorites" value={stats.favorites} />
-            <Stat icon={Trophy} label="Quizzes taken" value={stats.quizzes} />
-            <Stat icon={Trophy} label="Best score" value={`${stats.bestScore}%`} />
+            <Stat icon={BookOpen} label="So'zlar" value={stats.totalWords} />
+            <Stat icon={Heart} label="Saqlangan" value={stats.favorites} />
+            <Stat icon={Trophy} label="Testlar" value={stats.quizzes} />
+            <Stat icon={Trophy} label="Eng yaxshi natija" value={`${stats.bestScore}%`} />
           </div>
 
           <div className="mt-4 rounded-3xl bg-gradient-card p-6 text-white shadow-glow">
-            <p className="text-xs uppercase tracking-wider text-white/70">Average quiz accuracy</p>
+            <p className="text-xs uppercase tracking-wider text-[var(--brand-2)]">O'rtacha aniqlik</p>
             <p className="mt-2 text-4xl font-extrabold">{stats.avg}%</p>
             <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-white/15">
-              <div className="h-full bg-white transition-all" style={{ width: `${stats.avg}%` }} />
+              <div className="h-full bg-[var(--brand-2)] transition-all" style={{ width: `${stats.avg}%` }} />
             </div>
           </div>
         </>
@@ -78,7 +82,7 @@ function Profile() {
         onClick={signOut}
         className="mt-8 flex w-full items-center justify-center gap-2 rounded-2xl border border-border bg-card py-3 text-sm font-semibold transition hover:bg-accent"
       >
-        <LogOut className="h-4 w-4" /> Sign out
+        <LogOut className="h-4 w-4" /> Chiqish
       </button>
     </div>
   );
