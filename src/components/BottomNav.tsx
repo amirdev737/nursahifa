@@ -1,13 +1,14 @@
 import { Link } from "@tanstack/react-router";
 import { Home, Plus, Heart, Brain, User } from "lucide-react";
 
-const items = [
+type Item = { to: string; label: string; icon: typeof Home; primary?: boolean };
+const items: Item[] = [
   { to: "/feed", label: "Feed", icon: Home },
   { to: "/favorites", label: "Saved", icon: Heart },
   { to: "/add", label: "Add", icon: Plus, primary: true },
   { to: "/quiz", label: "Quiz", icon: Brain },
   { to: "/profile", label: "Me", icon: User },
-] as const;
+];
 
 export function BottomNav() {
   return (
