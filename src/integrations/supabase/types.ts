@@ -64,6 +64,7 @@ export type Database = {
           antonyms: string[] | null
           created_at: string
           example: string | null
+          example_uz: string | null
           explanation: string | null
           id: string
           ipa: string | null
@@ -78,6 +79,7 @@ export type Database = {
           antonyms?: string[] | null
           created_at?: string
           example?: string | null
+          example_uz?: string | null
           explanation?: string | null
           id?: string
           ipa?: string | null
@@ -92,6 +94,7 @@ export type Database = {
           antonyms?: string[] | null
           created_at?: string
           example?: string | null
+          example_uz?: string | null
           explanation?: string | null
           id?: string
           ipa?: string | null
