@@ -26,12 +26,33 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
+function mulberry32(seed: number) {
+  let a = seed >>> 0;
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function seededShuffle<T>(arr: T[], rand: () => number): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 function Feed() {
   const [cards, setCards] = useState<WordCard[] | null>(null);
   const [mixed, setMixed] = useState(false);
   const [unlockedChunks, setUnlockedChunks] = useState(1);
   const [solvedQuizzes, setSolvedQuizzes] = useState<Set<number>>(new Set());
   const scrollerRef = useRef<HTMLDivElement>(null);
+  const sessionSeed = useMemo(() => Math.floor(Math.random() * 0x7fffffff), []);
 
   useEffect(() => {
     supabase
@@ -56,32 +77,28 @@ function Feed() {
   const items = useMemo<FeedItem[]>(() => {
     if (!cards || cards.length === 0) return [];
     const out: FeedItem[] = [];
-    const canQuiz = cards.filter((c) => c.translation_uz).length >= 4;
+    const eligible = cards.filter((c) => c.translation_uz);
+    const canQuiz = eligible.length >= 4;
+    // Stable random order of eligible words across chunks so each quiz uses a different word
+    const order = seededShuffle(eligible.map((_, i) => i), mulberry32(sessionSeed));
     for (let chunk = 0; chunk < unlockedChunks; chunk++) {
       for (let i = 0; i < CARDS_PER_CHUNK; i++) {
         const idx = (chunk * CARDS_PER_CHUNK + i) % cards.length;
         const card = cards[idx];
-        const startWithUz = mixed && Math.random() < 0.5; // randomly flip front for mixed mode
         out.push({
           kind: "card",
           key: `c-${chunk}-${i}-${card.id}`,
           card,
-          startWithUz: mixed ? ((chunk * 7 + i * 3) % 2 === 0) : false, // deterministic-ish
+          startWithUz: mixed ? ((chunk * 7 + i * 3) % 2 === 0) : false,
         });
-        void startWithUz;
       }
       if (canQuiz) {
-        const correctIdx = (chunk * CARDS_PER_CHUNK + Math.floor(Math.random() * CARDS_PER_CHUNK)) % cards.length;
-        const correct = cards[correctIdx] ?? cards[0];
-        // pick this deterministically per chunk so it doesn't re-randomize on every render
-        const seed = chunk;
-        const safeCorrect = cards[(seed * 13 + 7) % cards.length].translation_uz
-          ? cards[(seed * 13 + 7) % cards.length]
-          : cards.find((c) => c.translation_uz) ?? correct;
-        const distractorPool = cards.filter((c) => c.id !== safeCorrect.id && c.translation_uz);
-        const distractors = shuffle(distractorPool).slice(0, 3).map((c) => c.translation_uz!);
-        const choices = shuffle([safeCorrect.translation_uz!, ...distractors]);
-        out.push({ kind: "quiz", key: `q-${chunk}`, correct: safeCorrect, choices });
+        const safeCorrect = eligible[order[chunk % order.length]];
+        const rand = mulberry32(sessionSeed + chunk * 1013904223 + 1664525);
+        const distractorPool = eligible.filter((c) => c.id !== safeCorrect.id);
+        const distractors = seededShuffle(distractorPool, rand).slice(0, 3).map((c) => c.translation_uz!);
+        const choices = seededShuffle([safeCorrect.translation_uz!, ...distractors], rand);
+        out.push({ kind: "quiz", key: `q-${chunk}-${safeCorrect.id}`, correct: safeCorrect, choices });
       }
     }
     return out;
