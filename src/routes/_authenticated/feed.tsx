@@ -1,18 +1,37 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Flashcard, type WordCard } from "@/components/Flashcard";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { toast } from "sonner";
-import { Loader2, Plus, Sparkles } from "lucide-react";
+import { Loader2, Plus, Sparkles, Shuffle, Check, X } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/feed")({
   head: () => ({ meta: [{ title: "Lenta — VocabFlow" }] }),
   component: Feed,
 });
 
+const CARDS_PER_CHUNK = 5;
+
+type FeedItem =
+  | { kind: "card"; key: string; card: WordCard; startWithUz: boolean }
+  | { kind: "quiz"; key: string; correct: WordCard; choices: string[] };
+
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 function Feed() {
   const [cards, setCards] = useState<WordCard[] | null>(null);
+  const [mixed, setMixed] = useState(false);
+  const [unlockedChunks, setUnlockedChunks] = useState(1);
+  const [solvedQuizzes, setSolvedQuizzes] = useState<Set<number>>(new Set());
+  const scrollerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     supabase
@@ -20,7 +39,7 @@ function Feed() {
       .select("id,word,translation_uz,ipa,example,example_uz,explanation,synonyms,antonyms,is_favorite")
       .eq("status", "ready")
       .order("created_at", { ascending: false })
-      .limit(100)
+      .limit(200)
       .then(({ data, error }) => {
         if (error) toast.error(error.message);
         setCards((data as WordCard[]) ?? []);
@@ -31,6 +50,57 @@ function Feed() {
     setCards((prev) => prev?.map((c) => (c.id === id ? { ...c, is_favorite: value } : c)) ?? null);
     const { error } = await supabase.from("words").update({ is_favorite: value }).eq("id", id);
     if (error) toast.error(error.message);
+  }, []);
+
+  // Build the visible queue: for each unlocked chunk, 5 cards + 1 quiz (if user has enough words)
+  const items = useMemo<FeedItem[]>(() => {
+    if (!cards || cards.length === 0) return [];
+    const out: FeedItem[] = [];
+    const canQuiz = cards.filter((c) => c.translation_uz).length >= 4;
+    for (let chunk = 0; chunk < unlockedChunks; chunk++) {
+      for (let i = 0; i < CARDS_PER_CHUNK; i++) {
+        const idx = (chunk * CARDS_PER_CHUNK + i) % cards.length;
+        const card = cards[idx];
+        const startWithUz = mixed && Math.random() < 0.5; // randomly flip front for mixed mode
+        out.push({
+          kind: "card",
+          key: `c-${chunk}-${i}-${card.id}`,
+          card,
+          startWithUz: mixed ? ((chunk * 7 + i * 3) % 2 === 0) : false, // deterministic-ish
+        });
+        void startWithUz;
+      }
+      if (canQuiz) {
+        const correctIdx = (chunk * CARDS_PER_CHUNK + Math.floor(Math.random() * CARDS_PER_CHUNK)) % cards.length;
+        const correct = cards[correctIdx] ?? cards[0];
+        // pick this deterministically per chunk so it doesn't re-randomize on every render
+        const seed = chunk;
+        const safeCorrect = cards[(seed * 13 + 7) % cards.length].translation_uz
+          ? cards[(seed * 13 + 7) % cards.length]
+          : cards.find((c) => c.translation_uz) ?? correct;
+        const distractorPool = cards.filter((c) => c.id !== safeCorrect.id && c.translation_uz);
+        const distractors = shuffle(distractorPool).slice(0, 3).map((c) => c.translation_uz!);
+        const choices = shuffle([safeCorrect.translation_uz!, ...distractors]);
+        out.push({ kind: "quiz", key: `q-${chunk}`, correct: safeCorrect, choices });
+      }
+    }
+    return out;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cards, unlockedChunks, mixed]);
+
+  const onSolveQuiz = useCallback((chunk: number) => {
+    setSolvedQuizzes((prev) => {
+      const n = new Set(prev);
+      n.add(chunk);
+      return n;
+    });
+    setUnlockedChunks((c) => c + 1);
+    // smooth scroll to next card
+    setTimeout(() => {
+      const el = scrollerRef.current;
+      if (!el) return;
+      el.scrollBy({ top: el.clientHeight, behavior: "smooth" });
+    }, 350);
   }, []);
 
   if (cards === null) {
@@ -63,12 +133,109 @@ function Feed() {
 
   return (
     <div className="relative">
-      <ThemeToggle className="fixed right-4 top-4 z-40" />
-      <div className="scroll-snap-y no-scrollbar h-[calc(100dvh-72px)] overflow-y-auto">
-        {cards.map((c) => (
-          <Flashcard key={c.id} card={c} onToggleFavorite={toggleFav} />
-        ))}
+      <div className="fixed right-4 top-4 z-40 flex items-center gap-2">
+        <button
+          onClick={() => setMixed((m) => !m)}
+          className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold backdrop-blur transition border ${
+            mixed
+              ? "bg-[var(--brand-2)]/90 text-[oklch(0.18_0.05_260)] border-[var(--brand-2)]"
+              : "bg-background/70 text-foreground border-border"
+          }`}
+          aria-label="Aralashtirish"
+        >
+          <Shuffle className="h-3.5 w-3.5" /> {mixed ? "Aralash" : "EN"}
+        </button>
+        <ThemeToggle />
+      </div>
+
+      <div ref={scrollerRef} className="scroll-snap-y no-scrollbar h-[calc(100dvh-72px)] overflow-y-auto">
+        {items.map((it, idx) => {
+          if (it.kind === "card") {
+            return <Flashcard key={it.key} card={it.card} onToggleFavorite={toggleFav} startWithUz={it.startWithUz} />;
+          }
+          const chunk = Math.floor(idx / (CARDS_PER_CHUNK + 1));
+          const solved = solvedQuizzes.has(chunk);
+          return (
+            <QuizGate
+              key={it.key}
+              data={it}
+              solved={solved}
+              onSolve={() => onSolveQuiz(chunk)}
+            />
+          );
+        })}
       </div>
     </div>
+  );
+}
+
+function QuizGate({
+  data,
+  solved,
+  onSolve,
+}: {
+  data: Extract<FeedItem, { kind: "quiz" }>;
+  solved: boolean;
+  onSolve: () => void;
+}) {
+  const [picked, setPicked] = useState<string | null>(null);
+  const [wrong, setWrong] = useState<Set<string>>(new Set());
+
+  const handle = (choice: string) => {
+    if (solved) return;
+    if (choice === data.correct.translation_uz) {
+      setPicked(choice);
+      setTimeout(onSolve, 600);
+    } else {
+      setWrong((w) => new Set(w).add(choice));
+    }
+  };
+
+  return (
+    <article
+      className="snap-start-always relative flex h-[calc(100dvh-72px)] w-full items-center justify-center px-4 py-2"
+      style={{ scrollSnapStop: "always" }}
+    >
+      <div className="flex h-full w-full max-w-md flex-col rounded-[2rem] bg-gradient-to-br from-[oklch(0.18_0.05_260)] via-[oklch(0.22_0.08_260)] to-[oklch(0.13_0.04_260)] p-5 text-white shadow-glow ring-2 ring-[var(--brand-2)]/40">
+        <div className="flex items-center justify-between">
+          <span className="rounded-full bg-[var(--brand-2)]/25 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-[var(--brand-2)]">
+            ⚡ Mini test
+          </span>
+          {solved && <Check className="h-5 w-5 text-[var(--brand-2)]" />}
+        </div>
+        <p className="mt-6 text-center text-xs uppercase tracking-wider text-white/60">Tarjimani toping</p>
+        <h2 className="mt-2 text-center text-4xl font-extrabold tracking-tight">{data.correct.word}</h2>
+        {data.correct.ipa && (
+          <p className="mt-1 text-center text-xs text-white/60 font-mono">/{data.correct.ipa.replace(/^\/|\/$/g, "")}/</p>
+        )}
+
+        <div className="mt-6 grid gap-2.5">
+          {data.choices.map((choice) => {
+            const isCorrect = (solved || picked) && choice === data.correct.translation_uz;
+            const isWrong = wrong.has(choice);
+            return (
+              <button
+                key={choice}
+                onClick={() => handle(choice)}
+                disabled={solved || isWrong}
+                className={`flex items-center justify-between rounded-2xl border px-4 py-3.5 text-left text-sm font-semibold transition
+                  ${isCorrect ? "border-[var(--brand-2)] bg-[var(--brand-2)]/20 text-[var(--brand-2)]" : ""}
+                  ${isWrong ? "border-destructive/60 bg-destructive/15 text-destructive/90 opacity-60" : ""}
+                  ${!isCorrect && !isWrong ? "border-white/15 bg-white/5 hover:bg-white/10 active:scale-[0.99]" : ""}
+                `}
+              >
+                <span>{choice}</span>
+                {isCorrect && <Check className="h-4 w-4" />}
+                {isWrong && <X className="h-4 w-4" />}
+              </button>
+            );
+          })}
+        </div>
+
+        <p className="mt-auto pt-4 text-center text-[11px] text-white/55">
+          {solved ? "Davom etish uchun pastga suring" : "To'g'ri javobni topmaguningizcha davom eta olmaysiz"}
+        </p>
+      </div>
+    </article>
   );
 }
