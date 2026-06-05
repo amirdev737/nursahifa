@@ -168,12 +168,13 @@ export const extractWordsFromImage = createServerFn({ method: "POST" })
     if (!args) return { words: [] as string[] };
     try {
       const parsed = JSON.parse(args);
-      const words = Array.isArray(parsed.words)
+      const raw: string[] = Array.isArray(parsed.words)
         ? parsed.words
             .map((w: unknown) => String(w).trim().toLowerCase())
             .filter((w: string) => w.length > 0 && w.length < 50 && /^[a-z][a-z\- ']*$/i.test(w))
         : [];
-      return { words: Array.from(new Set(words)).slice(0, 25) };
+      const words: string[] = Array.from(new Set(raw)).slice(0, 25);
+      return { words };
     } catch {
       return { words: [] as string[] };
     }
