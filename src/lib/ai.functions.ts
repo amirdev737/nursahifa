@@ -107,3 +107,75 @@ export const generateWordData = createServerFn({ method: "POST" })
 
     return { inserted: rows.length };
   });
+
+export const extractWordsFromImage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: { imageDataUrl: string }) => {
+    if (!data?.imageDataUrl || typeof data.imageDataUrl !== "string") throw new Error("image required");
+    if (!data.imageDataUrl.startsWith("data:image/")) throw new Error("Invalid image format");
+    if (data.imageDataUrl.length > 8_000_000) throw new Error("Rasm juda katta (max ~6MB)");
+    return { imageDataUrl: data.imageDataUrl };
+  })
+  .handler(async ({ data }) => {
+    const apiKey = process.env.LOVABLE_API_KEY;
+    if (!apiKey) throw new Error("LOVABLE_API_KEY not configured");
+
+    const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          {
+            role: "system",
+            content:
+              "You extract English vocabulary words from images (handwritten notes, textbook pages, photos). Return ONLY meaningful English words/short phrases the user wants to learn. Skip articles, numbers, gibberish. Lowercase, deduplicated.",
+          },
+          {
+            role: "user",
+            content: [
+              { type: "text", text: "List the English vocabulary words shown in this image." },
+              { type: "image_url", image_url: { url: data.imageDataUrl } },
+            ],
+          },
+        ],
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "return_words",
+              description: "Return extracted English vocabulary words",
+              parameters: {
+                type: "object",
+                properties: { words: { type: "array", items: { type: "string" } } },
+                required: ["words"],
+                additionalProperties: false,
+              },
+            },
+          },
+        ],
+        tool_choice: { type: "function", function: { name: "return_words" } },
+      }),
+    });
+
+    if (!resp.ok) {
+      if (resp.status === 429) throw new Error("So'rovlar limiti tugadi. Birozdan keyin urinib ko'ring.");
+      if (resp.status === 402) throw new Error("AI kreditlar tugadi.");
+      throw new Error("Rasmni o'qib bo'lmadi");
+    }
+    const json = await resp.json();
+    const args = json.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
+    if (!args) return { words: [] as string[] };
+    try {
+      const parsed = JSON.parse(args);
+      const raw: string[] = Array.isArray(parsed.words)
+        ? parsed.words
+            .map((w: unknown) => String(w).trim().toLowerCase())
+            .filter((w: string) => w.length > 0 && w.length < 50 && /^[a-z][a-z\- ']*$/i.test(w))
+        : [];
+      const words: string[] = Array.from(new Set(raw)).slice(0, 25);
+      return { words };
+    } catch {
+      return { words: [] as string[] };
+    }
+  });
