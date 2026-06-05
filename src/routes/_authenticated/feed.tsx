@@ -52,6 +52,7 @@ function Feed() {
   const [unlockedChunks, setUnlockedChunks] = useState(1);
   const [solvedQuizzes, setSolvedQuizzes] = useState<Set<number>>(new Set());
   const scrollerRef = useRef<HTMLDivElement>(null);
+  const sessionSeed = useMemo(() => Math.floor(Math.random() * 0x7fffffff), []);
 
   useEffect(() => {
     supabase
