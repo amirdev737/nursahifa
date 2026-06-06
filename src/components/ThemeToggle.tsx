@@ -22,7 +22,7 @@ export function ThemeToggle({ className = "" }: { className?: string }) {
     <button
       onClick={toggle}
       aria-label="Mavzuni almashtirish"
-      className={`grid h-10 w-10 place-items-center rounded-full border border-border bg-card/70 backdrop-blur transition hover:bg-accent ${className}`}
+      className={`glass-chip grid h-10 w-10 place-items-center rounded-full transition active:scale-90 hover:scale-105 ${className}`}
     >
       {dark ? <Sun className="h-4 w-4 text-[var(--brand-2)]" /> : <Moon className="h-4 w-4" />}
     </button>
