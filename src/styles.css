@@ -151,7 +151,6 @@
   /* default (light): deep navy translucent card with cream text */
   background: linear-gradient(160deg, oklch(0.30 0.11 260 / 0.55), oklch(0.18 0.08 260 / 0.45));
   backdrop-filter: blur(32px) saturate(180%);
-  -webkit-backdrop-filter: blur(32px) saturate(180%);
   border: 1px solid oklch(1 0 0 / 0.18);
   box-shadow: var(--shadow-glow), inset 0 1px 0 oklch(1 0 0 / 0.14);
 }
@@ -163,21 +162,18 @@
 @utility glass-inner {
   background: oklch(1 0 0 / 0.10);
   backdrop-filter: blur(14px) saturate(140%);
-  -webkit-backdrop-filter: blur(14px) saturate(140%);
   border: 1px solid oklch(1 0 0 / 0.10);
 }
 .dark .glass-inner { background: oklch(1 0 0 / 0.07); }
 @utility glass-chip {
   background: oklch(1 0 0 / 0.18);
   backdrop-filter: blur(18px) saturate(160%);
-  -webkit-backdrop-filter: blur(18px) saturate(160%);
   border: 1px solid oklch(1 0 0 / 0.20);
 }
 .dark .glass-chip { background: oklch(1 0 0 / 0.10); border-color: oklch(1 0 0 / 0.12); }
 @utility glass-nav {
   background: color-mix(in oklab, var(--background) 35%, transparent);
   backdrop-filter: blur(32px) saturate(200%);
-  -webkit-backdrop-filter: blur(32px) saturate(200%);
   border-top: 1px solid oklch(1 0 0 / 0.10);
 }
 @keyframes float-up {
