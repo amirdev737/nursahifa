@@ -67,13 +67,13 @@
   --brand-2: oklch(0.78 0.14 85);     /* gold */
   --success: oklch(0.65 0.17 150);
 
-  --gradient-brand: linear-gradient(135deg, oklch(0.28 0.1 260), oklch(0.78 0.14 85));
-  --gradient-card: linear-gradient(160deg, oklch(0.22 0.09 260) 0%, oklch(0.32 0.11 260) 55%, oklch(0.6 0.13 85) 100%);
-  --gradient-mesh: radial-gradient(at 20% 10%, oklch(0.78 0.14 85 / 0.25) 0px, transparent 50%),
-                   radial-gradient(at 80% 90%, oklch(0.28 0.1 260 / 0.18) 0px, transparent 50%);
+  --gradient-brand: linear-gradient(135deg, oklch(0.22 0.09 260), oklch(0.35 0.13 260));
+  --gradient-card: linear-gradient(160deg, oklch(0.18 0.07 260) 0%, oklch(0.24 0.10 262) 60%, oklch(0.30 0.12 260) 100%);
+  --gradient-mesh: radial-gradient(at 20% 10%, oklch(0.30 0.13 260 / 0.55) 0px, transparent 50%),
+                   radial-gradient(at 80% 90%, oklch(0.78 0.14 85 / 0.18) 0px, transparent 50%);
 
-  --shadow-glow: 0 20px 60px -20px oklch(0.3 0.1 260 / 0.4);
-  --shadow-soft: 0 10px 40px -15px oklch(0.3 0.1 260 / 0.18);
+  --shadow-glow: 0 20px 60px -20px oklch(0.20 0.10 260 / 0.55);
+  --shadow-soft: 0 10px 40px -15px oklch(0.20 0.10 260 / 0.25);
 }
 
 /* Dark mode — deep navy + gold */
@@ -101,12 +101,12 @@
   --brand-2: oklch(0.82 0.14 85);
   --success: oklch(0.75 0.18 150);
 
-  --gradient-brand: linear-gradient(135deg, oklch(0.32 0.12 260), oklch(0.78 0.14 85));
-  --gradient-card: linear-gradient(160deg, oklch(0.22 0.09 260) 0%, oklch(0.3 0.11 265) 55%, oklch(0.55 0.14 85) 100%);
-  --gradient-mesh: radial-gradient(at 20% 10%, oklch(0.4 0.14 260 / 0.5) 0px, transparent 50%),
-                   radial-gradient(at 80% 90%, oklch(0.6 0.16 85 / 0.25) 0px, transparent 50%);
+  --gradient-brand: linear-gradient(135deg, oklch(0.22 0.10 260), oklch(0.38 0.14 262));
+  --gradient-card: linear-gradient(160deg, oklch(0.17 0.07 260) 0%, oklch(0.22 0.10 262) 55%, oklch(0.30 0.12 264) 100%);
+  --gradient-mesh: radial-gradient(at 20% 10%, oklch(0.32 0.14 260 / 0.6) 0px, transparent 55%),
+                   radial-gradient(at 85% 90%, oklch(0.78 0.14 85 / 0.12) 0px, transparent 50%);
 
-  --shadow-glow: 0 20px 80px -20px oklch(0.6 0.18 85 / 0.45);
+  --shadow-glow: 0 25px 80px -20px oklch(0.14 0.08 260 / 0.7);
   --shadow-soft: 0 10px 40px -15px oklch(0 0 0 / 0.55);
 }
 
