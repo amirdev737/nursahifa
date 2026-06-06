@@ -146,6 +146,28 @@
   &::-webkit-scrollbar { display: none; }
 }
 
+/* iOS-style frosted glass utilities */
+@utility glass-card {
+  background: linear-gradient(160deg, oklch(0.20 0.09 260 / 0.65), oklch(0.14 0.06 260 / 0.55));
+  backdrop-filter: blur(28px) saturate(160%);
+  border: 1px solid oklch(1 0 0 / 0.10);
+  box-shadow: var(--shadow-glow), inset 0 1px 0 oklch(1 0 0 / 0.12);
+}
+@utility glass-inner {
+  background: oklch(1 0 0 / 0.08);
+  backdrop-filter: blur(14px) saturate(140%);
+  border: 1px solid oklch(1 0 0 / 0.08);
+}
+@utility glass-chip {
+  background: oklch(1 0 0 / 0.14);
+  backdrop-filter: blur(18px) saturate(160%);
+  border: 1px solid oklch(1 0 0 / 0.14);
+}
+@utility glass-nav {
+  background: oklch(var(--background) / 0.55);
+  backdrop-filter: blur(28px) saturate(180%);
+  border-top: 1px solid oklch(1 0 0 / 0.08);
+}
 @keyframes float-up {
   0% { opacity: 0; transform: translateY(20px); }
   100% { opacity: 1; transform: translateY(0); }
