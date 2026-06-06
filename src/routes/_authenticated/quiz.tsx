@@ -115,7 +115,7 @@ function Quiz() {
   };
 
   return (
-    <div className="mx-auto max-w-md px-5 pt-10 pb-24">
+    <div className="mx-auto flex h-[calc(100dvh-72px)] max-w-md flex-col px-5 pt-6 pb-4 overflow-hidden">
       <div className="flex items-center justify-between text-sm text-muted-foreground">
         <span>Savol {idx + 1} / {questions.length}</span>
         <div className="flex items-center gap-3">
@@ -123,16 +123,16 @@ function Quiz() {
           <ThemeToggle />
         </div>
       </div>
-      <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+      <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted shrink-0">
         <div className="h-full bg-gradient-brand transition-all" style={{ width: `${((idx + 1) / questions.length) * 100}%` }} />
       </div>
 
-      <div className="mt-8 rounded-3xl bg-gradient-card p-8 text-center text-white shadow-glow">
-        <p className="text-xs uppercase tracking-wider text-[var(--brand-2)]">O'zbekchaga tarjima qiling</p>
-        <h2 className="mt-3 text-4xl font-extrabold">{q.word}</h2>
+      <div className="mt-4 rounded-3xl bg-gradient-card p-5 text-center text-white shadow-glow shrink-0">
+        <p className="text-[11px] uppercase tracking-wider text-[var(--brand-2)]">O'zbekchaga tarjima qiling</p>
+        <h2 className="mt-2 text-[clamp(1.5rem,7vw,2.25rem)] font-extrabold leading-tight">{q.word}</h2>
       </div>
 
-      <div className="mt-6 space-y-3">
+      <div className="mt-3 flex flex-1 min-h-0 flex-col justify-center gap-2">
         {q.choices.map((choice) => {
           const isPicked = picked === choice;
           const isRight = picked && choice === q.correct;
@@ -142,15 +142,15 @@ function Quiz() {
               key={choice}
               onClick={() => handlePick(choice)}
               disabled={!!picked}
-              className={`flex w-full items-center justify-between rounded-2xl border px-5 py-4 text-left text-base font-medium transition
+              className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm font-medium transition active:scale-[0.98]
                 ${isRight ? "border-success bg-success/15 text-success" : ""}
                 ${isWrong ? "border-destructive bg-destructive/15 text-destructive" : ""}
                 ${!picked ? "border-border bg-card hover:bg-accent" : ""}
               `}
             >
-              <span>{choice}</span>
-              {isRight && <Check className="h-5 w-5" />}
-              {isWrong && <X className="h-5 w-5" />}
+              <span className="truncate">{choice}</span>
+              {isRight && <Check className="h-5 w-5 shrink-0" />}
+              {isWrong && <X className="h-5 w-5 shrink-0" />}
             </button>
           );
         })}
@@ -158,3 +158,4 @@ function Quiz() {
     </div>
   );
 }
+

@@ -49,9 +49,9 @@ export function Flashcard({
       <button
         type="button"
         onClick={() => { if ("vibrate" in navigator) navigator.vibrate?.(8); setFlipped((f) => !f); }}
-        className="group relative flex h-full w-full max-w-md flex-col overflow-hidden rounded-[2rem] glass-card p-5 text-left text-white animate-float-up active:scale-[0.99] transition-transform"
+        className="group relative flex h-full w-full max-w-md flex-col overflow-hidden rounded-[2rem] glass-card p-4 text-left text-white animate-float-up active:scale-[0.99] transition-transform"
       >
-        <div className="absolute inset-0 bg-mesh opacity-40 pointer-events-none" />
+        <div className="absolute inset-0 bg-mesh opacity-30 pointer-events-none" />
 
         <div className="relative flex items-start justify-between">
           <span className="glass-chip rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--brand-2)]">
@@ -67,60 +67,60 @@ export function Flashcard({
         </div>
 
         {/* Hero word */}
-        <div className="relative mt-4 flex flex-col items-center justify-center text-center">
-          <h1 className="text-[clamp(2rem,9vw,3.25rem)] font-extrabold leading-tight tracking-tight break-words">
+        <div className="relative mt-3 flex flex-col items-center justify-center text-center shrink-0">
+          <h1 className="text-[clamp(1.6rem,7.5vw,2.6rem)] font-extrabold leading-tight tracking-tight break-words">
             {frontWord}
           </h1>
           {!showingUz && card.ipa && (
-            <p className="mt-1 text-xs text-white/70 font-mono">/{card.ipa.replace(/^\/|\/$/g, "")}/</p>
+            <p className="mt-0.5 text-[11px] text-white/70 font-mono">/{card.ipa.replace(/^\/|\/$/g, "")}/</p>
           )}
           <span
             onClick={(e) => { e.stopPropagation(); if ("vibrate" in navigator) navigator.vibrate?.(8); speak(card.word); }}
-            className="mt-2 inline-flex items-center gap-2 rounded-full glass-chip px-3 py-1.5 text-xs font-semibold text-[var(--brand-2)] active:scale-90 transition"
+            className="mt-1.5 inline-flex items-center gap-1.5 rounded-full glass-chip px-2.5 py-1 text-[11px] font-semibold text-[var(--brand-2)] active:scale-90 transition"
           >
-            <Volume2 className="h-3.5 w-3.5" /> Talaffuz
+            <Volume2 className="h-3 w-3" /> Talaffuz
           </span>
         </div>
 
         {!flipped ? (
-          <div className="relative mt-auto pt-3 text-center text-xs text-white/60">
+          <div className="relative mt-auto pt-3 text-center text-[11px] text-white/60">
             Kartochkani ko'rish uchun bosing
           </div>
         ) : (
-          <div className="relative mt-3 flex-1 min-h-0 flex flex-col gap-2 text-[13px]">
-            <div className="rounded-2xl glass-inner p-3 text-center">
-              <p className="text-[10px] uppercase tracking-wider text-white/60">{showingUz ? "Inglizcha" : "O'zbekcha"}</p>
-              <p className="mt-0.5 text-lg font-bold text-[var(--brand-2)] break-words">
+          <div className="relative mt-2 flex-1 min-h-0 overflow-hidden flex flex-col gap-1.5 text-[12px]">
+            <div className="rounded-2xl glass-inner p-2.5 text-center shrink-0">
+              <p className="text-[9px] uppercase tracking-wider text-white/60">{showingUz ? "Inglizcha" : "O'zbekcha"}</p>
+              <p className="mt-0.5 text-[clamp(1rem,4.5vw,1.25rem)] font-bold text-[var(--brand-2)] break-words leading-tight">
                 {showingUz ? card.word : (card.translation_uz ?? "—")}
               </p>
             </div>
 
             {card.example && (
-              <div className="rounded-2xl glass-inner p-3">
-                <p className="italic leading-snug line-clamp-2">"{card.example}"</p>
-                {card.example_uz && <p className="mt-1 text-white/80 line-clamp-2">— {card.example_uz}</p>}
+              <div className="rounded-2xl glass-inner p-2.5 shrink">
+                <p className="italic leading-snug line-clamp-2 text-[12px]">"{card.example}"</p>
+                {card.example_uz && <p className="mt-0.5 text-white/80 line-clamp-2 text-[11px]">— {card.example_uz}</p>}
               </div>
             )}
 
             {card.explanation && (
-              <div className="flex gap-2 rounded-2xl glass-inner p-3">
-                <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--brand-2)]" />
-                <p className="leading-snug line-clamp-3 text-white/95">{card.explanation}</p>
+              <div className="flex gap-1.5 rounded-2xl glass-inner p-2.5 shrink min-h-0">
+                <Sparkles className="mt-0.5 h-3 w-3 shrink-0 text-[var(--brand-2)]" />
+                <p className="leading-snug line-clamp-3 text-[12px] text-white/95">{card.explanation}</p>
               </div>
             )}
 
             {(card.synonyms?.length || card.antonyms?.length) ? (
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-1.5 shrink-0">
                 {card.synonyms?.length ? (
-                  <div className="rounded-xl glass-inner p-2">
+                  <div className="rounded-xl glass-inner p-2 min-w-0">
                     <p className="text-[9px] uppercase tracking-wider text-white/60">Sinonim</p>
-                    <p className="mt-0.5 text-xs font-medium truncate">{card.synonyms.slice(0, 3).join(", ")}</p>
+                    <p className="mt-0.5 text-[11px] font-medium line-clamp-2 break-words">{card.synonyms.slice(0, 3).join(", ")}</p>
                   </div>
                 ) : null}
                 {card.antonyms?.length ? (
-                  <div className="rounded-xl glass-inner p-2">
+                  <div className="rounded-xl glass-inner p-2 min-w-0">
                     <p className="text-[9px] uppercase tracking-wider text-white/60">Antonim</p>
-                    <p className="mt-0.5 text-xs font-medium truncate">{card.antonyms.slice(0, 3).join(", ")}</p>
+                    <p className="mt-0.5 text-[11px] font-medium line-clamp-2 break-words">{card.antonyms.slice(0, 3).join(", ")}</p>
                   </div>
                 ) : null}
               </div>

@@ -77,15 +77,15 @@ function AddPage() {
   };
 
   return (
-    <div className="mx-auto max-w-md px-5 pt-10 pb-24">
-      <div className="flex items-center justify-between">
+    <div className="mx-auto flex h-[calc(100dvh-72px)] max-w-md flex-col px-5 pt-5 pb-3 overflow-hidden">
+      <div className="flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
-          <div className="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-brand shadow-glow">
-            <Sparkles className="h-5 w-5 text-white" />
+          <div className="grid h-10 w-10 place-items-center rounded-2xl bg-gradient-brand shadow-glow">
+            <Sparkles className="h-4 w-4 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">So'z qo'shish</h1>
-            <p className="text-sm text-muted-foreground">AI siz uchun hammasini to'ldiradi.</p>
+            <h1 className="text-xl font-bold tracking-tight leading-tight">So'z qo'shish</h1>
+            <p className="text-[11px] text-muted-foreground">AI siz uchun hammasini to'ldiradi.</p>
           </div>
         </div>
         <ThemeToggle />
@@ -101,66 +101,66 @@ function AddPage() {
         onChange={(e) => handleImage(e.target.files?.[0])}
       />
 
-      <div className="mt-6 grid grid-cols-2 gap-3">
+      <div className="mt-3 grid grid-cols-2 gap-2 shrink-0">
         <button
           type="button" onClick={() => cameraRef.current?.click()} disabled={extracting}
-          className="flex items-center justify-center gap-2 rounded-2xl border border-[var(--brand-2)]/40 bg-[var(--brand-2)]/10 px-4 py-3 text-sm font-semibold text-[var(--brand-2)] disabled:opacity-50"
+          className="flex items-center justify-center gap-2 rounded-2xl border border-[var(--brand-2)]/40 bg-[var(--brand-2)]/10 px-3 py-2.5 text-xs font-semibold text-[var(--brand-2)] disabled:opacity-50 active:scale-95 transition"
         >
-          <Camera className="h-4 w-4" /> Rasmga tushirish
+          <Camera className="h-4 w-4" /> Rasmga olish
         </button>
         <button
           type="button" onClick={() => galleryRef.current?.click()} disabled={extracting}
-          className="flex items-center justify-center gap-2 rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold disabled:opacity-50"
+          className="flex items-center justify-center gap-2 rounded-2xl border border-border bg-card px-3 py-2.5 text-xs font-semibold disabled:opacity-50 active:scale-95 transition"
         >
           <ImagePlus className="h-4 w-4" /> Rasm yuklash
         </button>
       </div>
 
       {extracting && (
-        <div className="mt-3 flex items-center justify-center gap-2 rounded-2xl bg-card border border-border px-4 py-3 text-sm text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" /> Rasmdan so'zlar olinmoqda…
+        <div className="mt-2 flex items-center justify-center gap-2 rounded-2xl bg-card border border-border px-3 py-2 text-xs text-muted-foreground shrink-0">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Rasmdan so'zlar olinmoqda…
         </div>
       )}
 
       {preview && (
-        <div className="relative mt-3 overflow-hidden rounded-2xl border border-border">
-          <img src={preview} alt="preview" className="max-h-48 w-full object-cover" />
+        <div className="relative mt-2 overflow-hidden rounded-2xl border border-border shrink-0">
+          <img src={preview} alt="preview" className="max-h-24 w-full object-cover" />
           <button
             type="button" onClick={() => setPreview(null)}
-            className="absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full bg-background/80 backdrop-blur"
+            className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-full bg-background/80 backdrop-blur"
           >
-            <X className="h-4 w-4" />
+            <X className="h-3.5 w-3.5" />
           </button>
         </div>
       )}
 
-      <form onSubmit={submit} className="mt-5 space-y-4">
-        <div className="rounded-3xl border border-border bg-card p-2 shadow-soft">
+      <form onSubmit={submit} className="mt-3 flex flex-1 min-h-0 flex-col gap-2">
+        <div className="flex-1 min-h-0 rounded-3xl border border-border bg-card p-2 shadow-soft">
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            rows={7}
             placeholder={"serendipity\nephemeral\nresilient\n\n(har qatorga bittadan yoki vergul bilan)"}
-            className="w-full resize-none rounded-2xl bg-transparent p-4 text-base outline-none placeholder:text-muted-foreground"
+            className="h-full w-full resize-none rounded-2xl bg-transparent p-3 text-sm outline-none placeholder:text-muted-foreground"
             maxLength={1000}
           />
         </div>
 
-        <p className="text-xs text-muted-foreground px-1">
-          Maslahat: bir vaqtda 25 tagacha so'z qo'shing. Rasmdan ham qo'shsangiz bo'ladi.
+        <p className="text-[10px] text-muted-foreground px-1 shrink-0">
+          Maslahat: bir vaqtda 25 tagacha so'z qo'shing.
         </p>
 
         <button
           type="submit" disabled={loading || !input.trim()}
-          className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-brand py-4 text-base font-semibold text-white shadow-glow transition hover:scale-[1.01] disabled:opacity-60"
+          className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-brand py-3 text-sm font-semibold text-white shadow-glow transition active:scale-95 disabled:opacity-60 shrink-0"
         >
           {loading ? (
-            <><Loader2 className="h-5 w-5 animate-spin" /> Kartochkalar tayyorlanmoqda…</>
+            <><Loader2 className="h-4 w-4 animate-spin" /> Tayyorlanmoqda…</>
           ) : (
-            <>Kartochka yaratish <ArrowRight className="h-5 w-5" /></>
+            <>Kartochka yaratish <ArrowRight className="h-4 w-4" /></>
           )}
         </button>
       </form>
     </div>
   );
 }
+

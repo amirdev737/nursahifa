@@ -256,17 +256,33 @@ function Feed() {
   return (
     <div className="relative">
       <div className="fixed right-3 top-3 z-40 flex items-center gap-2">
-        <button
-          onClick={toggleShuffle}
-          className={`glass-chip flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold transition active:scale-90 hover:scale-105 ${
-            mixed ? "ring-2 ring-[var(--brand-2)]/60 text-[var(--brand-2)]" : "text-foreground"
-          }`}
-          aria-label="Aralashtirish"
-        >
-          <Shuffle className="h-3.5 w-3.5" /> {mixed ? "Aralash" : "Tartibli"}
-        </button>
+        <div className="glass-chip relative flex items-center rounded-full p-0.5 text-[11px] font-semibold">
+          <span
+            aria-hidden
+            className={`absolute top-0.5 bottom-0.5 w-1/2 rounded-full bg-gradient-brand shadow-glow transition-transform duration-300 ease-out ${
+              mixed ? "translate-x-full" : "translate-x-0"
+            }`}
+          />
+          <button
+            onClick={() => { if (mixed) toggleShuffle(); }}
+            className={`relative z-10 flex items-center gap-1 rounded-full px-3 py-1.5 transition active:scale-90 ${
+              !mixed ? "text-[var(--brand-2)]" : "text-foreground/70"
+            }`}
+          >
+            Tartibli
+          </button>
+          <button
+            onClick={() => { if (!mixed) toggleShuffle(); }}
+            className={`relative z-10 flex items-center gap-1 rounded-full px-3 py-1.5 transition active:scale-90 ${
+              mixed ? "text-[var(--brand-2)]" : "text-foreground/70"
+            }`}
+          >
+            <Shuffle className="h-3 w-3" /> Aralash
+          </button>
+        </div>
         <ThemeToggle />
       </div>
+
 
       <div ref={scrollerRef} className="scroll-snap-y no-scrollbar h-[calc(100dvh-72px)] overflow-y-auto">
         {items.map((it, idx) => {
