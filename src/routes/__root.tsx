@@ -65,8 +65,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:type", content: "website" },
       { name: "twitter:title", content: "𝐍𝐮𝐫𝐒𝐚𝐡𝐢𝐟𝐚" },
       { name: "twitter:description", content: "TikTok-style vocabulary flashcards with Uzbek translations, IPA, audio and AI examples." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/84cdacd7-036d-4249-a0ed-1d575cad1fba/id-preview-e683e394--d8e4095b-ef39-4a2b-8c6d-41e555c44d8b.lovable.app-1780563528546.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/84cdacd7-036d-4249-a0ed-1d575cad1fba/id-preview-e683e394--d8e4095b-ef39-4a2b-8c6d-41e555c44d8b.lovable.app-1780563528546.png" },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/9686db19-ffab-485f-a564-fa0c5db9cb8f" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/9686db19-ffab-485f-a564-fa0c5db9cb8f" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
