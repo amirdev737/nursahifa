@@ -13,6 +13,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { supabase } from "@/integrations/supabase/client";
 import { Toaster } from "sonner";
+import { TelegramAutoAuth } from "@/components/TelegramAutoAuth";
 
 function NotFoundComponent() {
   return (
@@ -86,6 +87,7 @@ function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className="dark">
       <head>
+        <script src="https://telegram.org/js/telegram-web-app.js" async />
         <HeadContent />
       </head>
       <body>
@@ -110,6 +112,7 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <TelegramAutoAuth />
       <Outlet />
       <Toaster position="top-center" richColors theme="dark" />
     </QueryClientProvider>
