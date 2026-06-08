@@ -1,10 +1,10 @@
 import { Link } from "@tanstack/react-router";
-import { Home, Plus, Heart, Brain, User } from "lucide-react";
+import { Home, Plus, Layers, Brain, User } from "lucide-react";
 
 type Item = { to: string; label: string; icon: typeof Home; primary?: boolean };
 const items: Item[] = [
   { to: "/feed", label: "Lenta", icon: Home },
-  { to: "/favorites", label: "Saqlangan", icon: Heart },
+  { to: "/learn", label: "O'rgan", icon: Layers },
   { to: "/add", label: "Qo'shish", icon: Plus, primary: true },
   { to: "/quiz", label: "Test", icon: Brain },
   { to: "/profile", label: "Men", icon: User },
