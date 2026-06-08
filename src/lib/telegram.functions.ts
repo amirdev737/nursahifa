@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { createHmac } from "node:crypto";
+import { createHmac, createHash } from "node:crypto";
 
 function verifyInitData(initData: string, botToken: string): Record<string, string> | null {
   try {
@@ -15,7 +15,7 @@ function verifyInitData(initData: string, botToken: string): Record<string, stri
     const computed = createHmac("sha256", secretKey).update(dataCheckString).digest("hex");
     if (computed !== hash) return null;
     const authDate = Number(params.get("auth_date") ?? 0);
-    if (!authDate || Date.now() / 1000 - authDate > 60 * 60 * 24) return null;
+    if (!authDate || Date.now() / 1000 - authDate > 60 * 60 * 24 * 7) return null;
     return Object.fromEntries(params.entries());
   } catch {
     return null;
@@ -26,9 +26,20 @@ function derivePassword(id: number, botToken: string): string {
   return createHmac("sha256", botToken).update(`tg-pw|${id}`).digest("hex");
 }
 
+function deterministicUuid(seed: string): string {
+  const h = createHash("sha1").update(seed).digest("hex");
+  return [
+    h.slice(0, 8),
+    h.slice(8, 12),
+    "5" + h.slice(13, 16),
+    ((parseInt(h.slice(16, 17), 16) & 0x3) | 0x8).toString(16) + h.slice(17, 20),
+    h.slice(20, 32),
+  ].join("-");
+}
+
 export const telegramSignIn = createServerFn({ method: "POST" })
   .inputValidator((data: { initData: string }) => {
-    if (!data?.initData || typeof data.initData !== "string" || data.initData.length > 4096) {
+    if (!data?.initData || typeof data.initData !== "string" || data.initData.length > 8192) {
       throw new Error("initData required");
     }
     return data;
@@ -50,6 +61,7 @@ export const telegramSignIn = createServerFn({ method: "POST" })
 
     const email = `tg${userObj.id}@telegram.local`;
     const password = derivePassword(userObj.id, botToken);
+    const userId = deterministicUuid(`telegram:${userObj.id}`);
     const displayName =
       [userObj.first_name, userObj.last_name].filter(Boolean).join(" ").trim() ||
       userObj.username ||
@@ -57,12 +69,11 @@ export const telegramSignIn = createServerFn({ method: "POST" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    // Try to find existing user by email
-    const { data: list } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 200 });
-    const existing = list?.users?.find((u) => u.email === email);
+    const { data: existing } = await supabaseAdmin.auth.admin.getUserById(userId);
 
-    if (!existing) {
+    if (!existing?.user) {
       const { error } = await supabaseAdmin.auth.admin.createUser({
+        id: userId,
         email,
         password,
         email_confirm: true,
@@ -73,26 +84,16 @@ export const telegramSignIn = createServerFn({ method: "POST" })
           avatar_url: userObj.photo_url,
         },
       });
-      if (error && !String(error.message).toLowerCase().includes("already")) {
-        throw new Error(error.message);
-      }
+      if (error) throw new Error(error.message);
     } else {
-      // Ensure password is in sync (in case bot token changed)
-      await supabaseAdmin.auth.admin.updateUserById(existing.id, { password });
+      // keep password in sync (no-op if unchanged)
+      await supabaseAdmin.auth.admin.updateUserById(userId, { password });
     }
 
-    // Upsert profile
-    const userId = existing?.id;
-    if (userId) {
-      await supabaseAdmin.from("profiles").upsert(
-        {
-          id: userId,
-          display_name: displayName,
-          avatar_url: userObj.photo_url ?? null,
-        },
-        { onConflict: "id" },
-      );
-    }
+    await supabaseAdmin.from("profiles").upsert(
+      { id: userId, display_name: displayName, avatar_url: userObj.photo_url ?? null },
+      { onConflict: "id" },
+    );
 
     return { email, password };
   });
