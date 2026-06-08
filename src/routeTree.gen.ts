@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedQuizRouteImport } from './routes/_authenticated/quiz'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
+import { Route as AuthenticatedLearnRouteImport } from './routes/_authenticated/learn'
 import { Route as AuthenticatedFeedRouteImport } from './routes/_authenticated/feed'
 import { Route as AuthenticatedFavoritesRouteImport } from './routes/_authenticated/favorites'
 import { Route as AuthenticatedAddRouteImport } from './routes/_authenticated/add'
@@ -42,6 +43,11 @@ const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedLearnRoute = AuthenticatedLearnRouteImport.update({
+  id: '/learn',
+  path: '/learn',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedFeedRoute = AuthenticatedFeedRouteImport.update({
   id: '/feed',
   path: '/feed',
@@ -64,6 +70,7 @@ export interface FileRoutesByFullPath {
   '/add': typeof AuthenticatedAddRoute
   '/favorites': typeof AuthenticatedFavoritesRoute
   '/feed': typeof AuthenticatedFeedRoute
+  '/learn': typeof AuthenticatedLearnRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/quiz': typeof AuthenticatedQuizRoute
 }
@@ -73,6 +80,7 @@ export interface FileRoutesByTo {
   '/add': typeof AuthenticatedAddRoute
   '/favorites': typeof AuthenticatedFavoritesRoute
   '/feed': typeof AuthenticatedFeedRoute
+  '/learn': typeof AuthenticatedLearnRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/quiz': typeof AuthenticatedQuizRoute
 }
@@ -84,6 +92,7 @@ export interface FileRoutesById {
   '/_authenticated/add': typeof AuthenticatedAddRoute
   '/_authenticated/favorites': typeof AuthenticatedFavoritesRoute
   '/_authenticated/feed': typeof AuthenticatedFeedRoute
+  '/_authenticated/learn': typeof AuthenticatedLearnRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/quiz': typeof AuthenticatedQuizRoute
 }
@@ -95,10 +104,19 @@ export interface FileRouteTypes {
     | '/add'
     | '/favorites'
     | '/feed'
+    | '/learn'
     | '/profile'
     | '/quiz'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/add' | '/favorites' | '/feed' | '/profile' | '/quiz'
+  to:
+    | '/'
+    | '/auth'
+    | '/add'
+    | '/favorites'
+    | '/feed'
+    | '/learn'
+    | '/profile'
+    | '/quiz'
   id:
     | '__root__'
     | '/'
@@ -107,6 +125,7 @@ export interface FileRouteTypes {
     | '/_authenticated/add'
     | '/_authenticated/favorites'
     | '/_authenticated/feed'
+    | '/_authenticated/learn'
     | '/_authenticated/profile'
     | '/_authenticated/quiz'
   fileRoutesById: FileRoutesById
@@ -154,6 +173,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProfileRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/learn': {
+      id: '/_authenticated/learn'
+      path: '/learn'
+      fullPath: '/learn'
+      preLoaderRoute: typeof AuthenticatedLearnRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/feed': {
       id: '/_authenticated/feed'
       path: '/feed'
@@ -182,6 +208,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAddRoute: typeof AuthenticatedAddRoute
   AuthenticatedFavoritesRoute: typeof AuthenticatedFavoritesRoute
   AuthenticatedFeedRoute: typeof AuthenticatedFeedRoute
+  AuthenticatedLearnRoute: typeof AuthenticatedLearnRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedQuizRoute: typeof AuthenticatedQuizRoute
 }
@@ -190,6 +217,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAddRoute: AuthenticatedAddRoute,
   AuthenticatedFavoritesRoute: AuthenticatedFavoritesRoute,
   AuthenticatedFeedRoute: AuthenticatedFeedRoute,
+  AuthenticatedLearnRoute: AuthenticatedLearnRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedQuizRoute: AuthenticatedQuizRoute,
 }
