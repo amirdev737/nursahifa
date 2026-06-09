@@ -59,6 +59,45 @@ export type Database = {
         }
         Relationships: []
       }
+      telegram_feedback_map: {
+        Row: {
+          admin_message_id: number
+          created_at: string
+          user_chat_id: number
+          user_message_id: number | null
+        }
+        Insert: {
+          admin_message_id: number
+          created_at?: string
+          user_chat_id: number
+          user_message_id?: number | null
+        }
+        Update: {
+          admin_message_id?: number
+          created_at?: string
+          user_chat_id?: number
+          user_message_id?: number | null
+        }
+        Relationships: []
+      }
+      telegram_user_modes: {
+        Row: {
+          chat_id: number
+          mode: string
+          updated_at: string
+        }
+        Insert: {
+          chat_id: number
+          mode?: string
+          updated_at?: string
+        }
+        Update: {
+          chat_id?: number
+          mode?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       words: {
         Row: {
           antonyms: string[] | null
