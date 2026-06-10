@@ -255,7 +255,9 @@ function Feed() {
 
   return (
     <div className="relative">
-      <div className="fixed right-3 top-3 z-40 flex items-center gap-2">
+      {/* Moved to top-LEFT so the Heart (like) button on each card stays clear on the right */}
+      <div className="fixed left-3 top-3 z-40 flex items-center gap-2">
+        <ThemeToggle />
         <div className="glass-chip relative flex items-center rounded-full p-0.5 text-[11px] font-semibold">
           <span
             aria-hidden
@@ -280,8 +282,9 @@ function Feed() {
             <Shuffle className="h-3 w-3" /> Aralash
           </button>
         </div>
-        <ThemeToggle />
       </div>
+
+
 
 
       <div ref={scrollerRef} className="scroll-snap-y no-scrollbar h-[calc(100dvh-72px)] overflow-y-auto">
