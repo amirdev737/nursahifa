@@ -95,74 +95,64 @@ function AuthPage() {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[oklch(0.10_0.06_260)]">
+    <div className="fixed inset-0 overflow-hidden bg-[oklch(0.10_0.06_260)]">
       {/* iOS-style ambient blobs */}
       <div className="pointer-events-none absolute -top-32 -left-24 h-[420px] w-[420px] rounded-full bg-[oklch(0.85_0.18_85_/_0.25)] blur-3xl" />
       <div className="pointer-events-none absolute -bottom-32 -right-24 h-[460px] w-[460px] rounded-full bg-[oklch(0.45_0.18_280_/_0.35)] blur-3xl" />
       <div className="pointer-events-none absolute top-1/3 left-1/2 h-[300px] w-[300px] -translate-x-1/2 rounded-full bg-[oklch(0.65_0.18_200_/_0.20)] blur-3xl" />
 
-      <ThemeToggle className="fixed right-4 top-4 z-40" />
+      <ThemeToggle className="fixed right-3 top-3 z-40" />
 
-      <div className="relative mx-auto flex min-h-screen max-w-md flex-col justify-center px-6 py-10">
-        <Link to="/" className="mb-7 inline-flex items-center gap-2 text-white">
-          <div className="grid h-9 w-9 place-items-center rounded-2xl bg-gradient-to-br from-[oklch(0.85_0.18_85)] to-[oklch(0.65_0.14_75)] shadow-[0_0_28px_oklch(0.82_0.16_85_/_0.6)]">
-            <Sparkles className="h-5 w-5 text-[oklch(0.15_0.05_260)]" />
+      <div className="relative mx-auto flex h-full max-w-md flex-col justify-center px-5 py-4">
+        <Link to="/" className="mb-3 inline-flex items-center gap-2 self-center text-white">
+          <div className="grid h-8 w-8 place-items-center rounded-2xl bg-gradient-to-br from-[oklch(0.85_0.18_85)] to-[oklch(0.65_0.14_75)] shadow-[0_0_24px_oklch(0.82_0.16_85_/_0.6)]">
+            <Sparkles className="h-4 w-4 text-[oklch(0.15_0.05_260)]" />
           </div>
-          <span className="text-lg font-bold tracking-tight">NurSahifa</span>
+          <span className="text-base font-bold tracking-tight">NurSahifa</span>
         </Link>
 
-        {/* Glass card */}
-        <div className="rounded-[28px] border border-white/15 bg-white/[0.06] p-6 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)] backdrop-blur-2xl">
-          <h1 className="text-2xl font-bold text-white">
+        <div className="rounded-[24px] border border-white/15 bg-white/[0.06] p-4 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)] backdrop-blur-2xl">
+          <h1 className="text-center text-xl font-bold text-white">
             {mode === "signin" ? "Xush kelibsiz" : "Akkaunt yaratish"}
           </h1>
-          <p className="mt-1 text-sm text-white/60">
-            {mode === "signin" ? "Davom etish uchun tizimga kiring." : "So'z boyligi sayohatingizni boshlang."}
+          <p className="mt-0.5 text-center text-[11px] text-white/60">
+            Telegram ID orqali bir bosishda kiring
           </p>
 
-          {/* Telegram login */}
-          <div className="mt-5 grid place-items-center">
+          <div className="mt-4 grid place-items-center">
             <div ref={tgBoxRef} className="min-h-[44px]" />
           </div>
-
-          <a
-            href={`https://t.me/${TG_BOT_USERNAME}?start=web`}
-            target="_blank" rel="noreferrer"
-            className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#229ED9] py-3 text-sm font-semibold text-white shadow-[0_10px_30px_-10px_rgba(34,158,217,0.7)] transition active:scale-[0.98]"
-          >
-            <Send className="h-4 w-4" /> Telegram botda ochish
-          </a>
 
           <button
             onClick={handleGoogle}
             disabled={loading}
-            className="mt-3 flex w-full items-center justify-center gap-3 rounded-2xl border border-white/15 bg-white/[0.08] py-3 text-sm font-semibold text-white backdrop-blur-xl transition hover:bg-white/[0.14] disabled:opacity-50"
+            className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/[0.08] py-2.5 text-[13px] font-semibold text-white backdrop-blur-xl transition hover:bg-white/[0.14] disabled:opacity-50"
           >
             <GoogleIcon /> Google bilan davom etish
           </button>
 
-          <div className="my-5 flex items-center gap-3 text-xs text-white/40">
+          <div className="my-3 flex items-center gap-3 text-[10px] text-white/40">
             <div className="h-px flex-1 bg-white/15" /> yoki email <div className="h-px flex-1 bg-white/15" />
           </div>
 
-          <form onSubmit={handleEmail} className="space-y-3">
+          <form onSubmit={handleEmail} className="space-y-2">
             {mode === "signup" && (
               <input
                 type="text" placeholder="Ismingiz" value={name} onChange={(e) => setName(e.target.value)}
-                className="w-full rounded-2xl border border-white/15 bg-white/[0.06] px-4 py-3 text-sm text-white placeholder:text-white/40 outline-none backdrop-blur focus:border-[oklch(0.82_0.16_85_/_0.5)] focus:ring-2 focus:ring-[oklch(0.82_0.16_85_/_0.3)]"
+                className="w-full rounded-xl border border-white/15 bg-white/[0.06] px-3.5 py-2.5 text-[13px] text-white placeholder:text-white/40 outline-none backdrop-blur focus:border-[oklch(0.82_0.16_85_/_0.5)] focus:ring-2 focus:ring-[oklch(0.82_0.16_85_/_0.3)]"
               />
             )}
             <input
               type="email" required placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-2xl border border-white/15 bg-white/[0.06] px-4 py-3 text-sm text-white placeholder:text-white/40 outline-none backdrop-blur focus:border-[oklch(0.82_0.16_85_/_0.5)] focus:ring-2 focus:ring-[oklch(0.82_0.16_85_/_0.3)]"
+              className="w-full rounded-xl border border-white/15 bg-white/[0.06] px-3.5 py-2.5 text-[13px] text-white placeholder:text-white/40 outline-none backdrop-blur focus:border-[oklch(0.82_0.16_85_/_0.5)] focus:ring-2 focus:ring-[oklch(0.82_0.16_85_/_0.3)]"
             />
             <input
               type="password" required minLength={6} placeholder="Parol" value={password} onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-2xl border border-white/15 bg-white/[0.06] px-4 py-3 text-sm text-white placeholder:text-white/40 outline-none backdrop-blur focus:border-[oklch(0.82_0.16_85_/_0.5)] focus:ring-2 focus:ring-[oklch(0.82_0.16_85_/_0.3)]"
+              className="w-full rounded-xl border border-white/15 bg-white/[0.06] px-3.5 py-2.5 text-[13px] text-white placeholder:text-white/40 outline-none backdrop-blur focus:border-[oklch(0.82_0.16_85_/_0.5)] focus:ring-2 focus:ring-[oklch(0.82_0.16_85_/_0.3)]"
             />
             <button
               type="submit" disabled={loading}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[oklch(0.85_0.18_85)] to-[oklch(0.68_0.14_75)] py-3 text-sm font-bold text-[oklch(0.15_0.05_260)] shadow-[0_10px_30px_-10px_oklch(0.82_0.16_85_/_0.7)] transition hover:scale-[1.01] disabled:opacity-60"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[oklch(0.85_0.18_85)] to-[oklch(0.68_0.14_75)] py-2.5 text-[13px] font-bold text-[oklch(0.15_0.05_260)] shadow-[0_10px_30px_-10px_oklch(0.82_0.16_85_/_0.7)] transition hover:scale-[1.01] disabled:opacity-60"
             >
               {loading && <Loader2 className="h-4 w-4 animate-spin" />}
               {mode === "signin" ? "Kirish" : "Akkaunt yaratish"}
@@ -171,7 +161,7 @@ function AuthPage() {
 
           <button
             onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
-            className="mt-5 w-full text-center text-sm text-white/60 hover:text-white"
+            className="mt-3 w-full text-center text-[12px] text-white/60 hover:text-white"
           >
             {mode === "signin" ? "Akkauntingiz yo'qmi? Ro'yxatdan o'ting" : "Akkauntingiz bormi? Kiring"}
           </button>
