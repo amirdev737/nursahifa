@@ -88,25 +88,29 @@ export const generateWordData = createServerFn({ method: "POST" })
       required: ["translation_uz", "ipa", "example", "example_uz", "explanation", "synonyms", "antonyms"],
     };
 
-    for (const word of data.words) {
-      try {
-        const json = await callGemini({
-          systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-          contents: [{ role: "user", parts: [{ text: `Word: "${word}"` }] }],
-          generationConfig: {
-            responseMimeType: "application/json",
-            responseSchema,
-            temperature: 0.7,
-          },
-        });
-        const parsed = parseJsonLoose(extractText(json));
-        if (!parsed) continue;
-        results.push({ word, ...parsed });
-      } catch (err) {
-        console.error("word failed", word, err);
-        continue;
-      }
-    }
+    // Parallel processing — much faster than sequential
+    const settled = await Promise.all(
+      data.words.map(async (word) => {
+        try {
+          const json = await callGemini({
+            systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+            contents: [{ role: "user", parts: [{ text: `Word: "${word}"` }] }],
+            generationConfig: {
+              responseMimeType: "application/json",
+              responseSchema,
+              temperature: 0.7,
+            },
+          });
+          const parsed = parseJsonLoose(extractText(json));
+          if (!parsed) return null;
+          return { word, ...parsed } as GeneratedWord;
+        } catch (err) {
+          console.error("word failed", word, err);
+          return null;
+        }
+      }),
+    );
+    for (const r of settled) if (r) results.push(r);
 
     if (results.length === 0) throw new Error("AI hech qanday natija qaytarmadi");
 
