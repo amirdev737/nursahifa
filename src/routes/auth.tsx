@@ -6,7 +6,7 @@ import { lovable } from "@/integrations/lovable";
 import { telegramWidgetSignIn } from "@/lib/telegram.functions";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { toast } from "sonner";
-import { Sparkles, Loader2, Send } from "lucide-react";
+import { Sparkles, Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({ meta: [{ title: "Kirish — NurSahifa" }] }),
