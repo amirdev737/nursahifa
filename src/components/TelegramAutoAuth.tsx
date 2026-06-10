@@ -50,7 +50,7 @@ export function TelegramAutoAuth() {
         setTimeout(() => {
           setPhase("hidden");
           if (location.pathname === "/" || location.pathname === "/auth") {
-            navigate({ to: "/learn" });
+            navigate({ to: "/feed" });
           }
         }, 1500);
       } catch (err) {

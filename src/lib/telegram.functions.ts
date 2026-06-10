@@ -97,3 +97,74 @@ export const telegramSignIn = createServerFn({ method: "POST" })
 
     return { email, password };
   });
+
+// --- Telegram Login Widget (web) ---
+// Verification per https://core.telegram.org/widgets/login#checking-authorization
+function verifyWidgetData(payload: Record<string, string>, botToken: string): boolean {
+  const { hash, ...rest } = payload;
+  if (!hash) return false;
+  const dataCheckString = Object.keys(rest)
+    .sort()
+    .map((k) => `${k}=${rest[k]}`)
+    .join("\n");
+  const secretKey = createHash("sha256").update(botToken).digest();
+  const computed = createHmac("sha256", secretKey).update(dataCheckString).digest("hex");
+  if (computed !== hash) return false;
+  const authDate = Number(rest.auth_date ?? 0);
+  if (!authDate || Date.now() / 1000 - authDate > 60 * 60 * 24) return false;
+  return true;
+}
+
+export const telegramWidgetSignIn = createServerFn({ method: "POST" })
+  .inputValidator((data: { payload: Record<string, string | number> }) => {
+    if (!data?.payload || typeof data.payload !== "object") throw new Error("payload required");
+    const out: Record<string, string> = {};
+    for (const [k, v] of Object.entries(data.payload)) {
+      if (typeof v === "string" || typeof v === "number") out[k] = String(v);
+    }
+    if (!out.id || !out.hash) throw new Error("invalid payload");
+    return { payload: out };
+  })
+  .handler(async ({ data }) => {
+    const botToken = process.env.TELEGRAM_BOT_TOKEN;
+    if (!botToken) throw new Error("Telegram bot token not configured");
+    if (!verifyWidgetData(data.payload, botToken)) {
+      throw new Error("Telegram ma'lumotlari yaroqsiz");
+    }
+    const p = data.payload;
+    const tgId = Number(p.id);
+    const email = `tg${tgId}@telegram.local`;
+    const password = derivePassword(tgId, botToken);
+    const userId = deterministicUuid(`telegram:${tgId}`);
+    const displayName =
+      [p.first_name, p.last_name].filter(Boolean).join(" ").trim() ||
+      p.username ||
+      `tg_${tgId}`;
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: existing } = await supabaseAdmin.auth.admin.getUserById(userId);
+    if (!existing?.user) {
+      const { error } = await supabaseAdmin.auth.admin.createUser({
+        id: userId,
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: {
+          full_name: displayName,
+          telegram_id: tgId,
+          telegram_username: p.username,
+          avatar_url: p.photo_url,
+        },
+      });
+      if (error) throw new Error(error.message);
+    } else {
+      await supabaseAdmin.auth.admin.updateUserById(userId, { password });
+    }
+
+    await supabaseAdmin.from("profiles").upsert(
+      { id: userId, display_name: displayName, avatar_url: p.photo_url ?? null },
+      { onConflict: "id" },
+    );
+
+    return { email, password };
+  });

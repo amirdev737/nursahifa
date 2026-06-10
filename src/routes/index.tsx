@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -17,10 +17,17 @@ export const Route = createFileRoute("/")({
 const TG_URL = "https://t.me/NurSahifaBot";
 
 function Landing() {
+  const navigate = useNavigate();
   const [authed, setAuthed] = useState(false);
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setAuthed(!!data.session));
-  }, []);
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) {
+        navigate({ to: "/feed", replace: true });
+        return;
+      }
+      setAuthed(false);
+    });
+  }, [navigate]);
 
   return (
     <div className="min-h-screen bg-background bg-mesh overflow-hidden">
