@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedTextRouteImport } from './routes/_authenticated/text'
 import { Route as AuthenticatedQuizRouteImport } from './routes/_authenticated/quiz'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedLearnRouteImport } from './routes/_authenticated/learn'
@@ -33,6 +34,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedTextRoute = AuthenticatedTextRouteImport.update({
+  id: '/text',
+  path: '/text',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedQuizRoute = AuthenticatedQuizRouteImport.update({
   id: '/quiz',
@@ -80,6 +86,7 @@ export interface FileRoutesByFullPath {
   '/learn': typeof AuthenticatedLearnRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/quiz': typeof AuthenticatedQuizRoute
+  '/text': typeof AuthenticatedTextRoute
   '/api/public/telegram/webhook': typeof ApiPublicTelegramWebhookRoute
 }
 export interface FileRoutesByTo {
@@ -91,6 +98,7 @@ export interface FileRoutesByTo {
   '/learn': typeof AuthenticatedLearnRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/quiz': typeof AuthenticatedQuizRoute
+  '/text': typeof AuthenticatedTextRoute
   '/api/public/telegram/webhook': typeof ApiPublicTelegramWebhookRoute
 }
 export interface FileRoutesById {
@@ -104,6 +112,7 @@ export interface FileRoutesById {
   '/_authenticated/learn': typeof AuthenticatedLearnRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/quiz': typeof AuthenticatedQuizRoute
+  '/_authenticated/text': typeof AuthenticatedTextRoute
   '/api/public/telegram/webhook': typeof ApiPublicTelegramWebhookRoute
 }
 export interface FileRouteTypes {
@@ -117,6 +126,7 @@ export interface FileRouteTypes {
     | '/learn'
     | '/profile'
     | '/quiz'
+    | '/text'
     | '/api/public/telegram/webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -128,6 +138,7 @@ export interface FileRouteTypes {
     | '/learn'
     | '/profile'
     | '/quiz'
+    | '/text'
     | '/api/public/telegram/webhook'
   id:
     | '__root__'
@@ -140,6 +151,7 @@ export interface FileRouteTypes {
     | '/_authenticated/learn'
     | '/_authenticated/profile'
     | '/_authenticated/quiz'
+    | '/_authenticated/text'
     | '/api/public/telegram/webhook'
   fileRoutesById: FileRoutesById
 }
@@ -172,6 +184,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/text': {
+      id: '/_authenticated/text'
+      path: '/text'
+      fullPath: '/text'
+      preLoaderRoute: typeof AuthenticatedTextRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/quiz': {
       id: '/_authenticated/quiz'
@@ -232,6 +251,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedLearnRoute: typeof AuthenticatedLearnRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedQuizRoute: typeof AuthenticatedQuizRoute
+  AuthenticatedTextRoute: typeof AuthenticatedTextRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -241,6 +261,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedLearnRoute: AuthenticatedLearnRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedQuizRoute: AuthenticatedQuizRoute,
+  AuthenticatedTextRoute: AuthenticatedTextRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
