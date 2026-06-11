@@ -199,6 +199,10 @@
   }
 }
 @keyframes spin-slow { to { transform: rotate(360deg); } }
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
 @keyframes particles-burst {
   0% { opacity: 0; transform: translate(0, 0) scale(0.4); }
   60% { opacity: 1; }

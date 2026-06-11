@@ -1,10 +1,10 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState, useRef } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { generateWordData, extractWordsFromImage } from "@/lib/ai.functions";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { toast } from "sonner";
-import { Loader2, Sparkles, ArrowRight, Camera, ImagePlus, X } from "lucide-react";
+import { Loader2, Sparkles, ArrowRight, Camera, ImagePlus, X, FileText } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/add")({
   head: () => ({ meta: [{ title: "So'z qo'shish — VocabFlow" }] }),
@@ -88,7 +88,15 @@ function AddPage() {
             <p className="text-[11px] text-muted-foreground">AI siz uchun hammasini to'ldiradi.</p>
           </div>
         </div>
-        <ThemeToggle />
+        <div className="flex items-center gap-2">
+          <Link
+            to="/text"
+            className="flex items-center gap-1.5 rounded-full border border-[#D4AF37]/50 bg-[#D4AF37]/10 px-3 py-1.5 text-[10px] font-bold text-[#D4AF37] active:scale-95 transition"
+          >
+            <FileText className="h-3 w-3" /> Matn
+          </Link>
+          <ThemeToggle />
+        </div>
       </div>
 
       {/* Image inputs */}
