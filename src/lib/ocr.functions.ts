@@ -118,8 +118,8 @@ function parseJsonLoose(text: string): any | null {
   }
 }
 
-// ---------- End-to-end server function ----------
-export const processImageOCR = createServerFn({ method: "POST" })
+// ---------- Step 1: OCR only (extract words for review) ----------
+export const extractWordsFromImageOCR = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: { imageDataUrl: string }) => {
     if (!data?.imageDataUrl || typeof data.imageDataUrl !== "string") throw new Error("Rasm kerak");
@@ -127,20 +127,33 @@ export const processImageOCR = createServerFn({ method: "POST" })
     if (data.imageDataUrl.length > 8_000_000) throw new Error("Rasm juda katta (max ~6MB)");
     return { imageDataUrl: data.imageDataUrl };
   })
-  .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
-
+  .handler(async ({ data }) => {
     const match = data.imageDataUrl.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
     if (!match) throw new Error("Noto'g'ri rasm ma'lumoti");
     const mimeType = match[1];
     const base64 = match[2];
 
-    // 1. HF OCR
     const rawText = await runHuggingFaceOCR(base64, mimeType);
     const words = tokenizeEnglishWords(rawText);
     if (words.length === 0) throw new Error("Rasmdan inglizcha so'z topilmadi");
+    return { words };
+  });
 
-    // 2. Single Gemini batch call
+// ---------- Step 2: Translate reviewed words + save ----------
+export const generateFromWordList = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: { words: string[] }) => {
+    if (!Array.isArray(data?.words)) throw new Error("So'zlar ro'yxati kerak");
+    const cleaned = data.words
+      .map((w) => String(w).trim().toLowerCase())
+      .filter((w) => w.length >= 2 && w.length <= 40 && /^[a-z][a-z\-'\s]*$/.test(w))
+      .slice(0, 40);
+    if (cleaned.length === 0) throw new Error("Yaroqli so'z topilmadi");
+    return { words: Array.from(new Set(cleaned)) };
+  })
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+
     const geminiJson = await callGemini({
       systemInstruction: {
         parts: [{
@@ -149,7 +162,7 @@ export const processImageOCR = createServerFn({ method: "POST" })
       },
       contents: [{
         role: "user",
-        parts: [{ text: `Words: ${JSON.stringify(words)}\n\nReturn a JSON array with one object per word.` }],
+        parts: [{ text: `Words: ${JSON.stringify(data.words)}\n\nReturn a JSON array with one object per word.` }],
       }],
       generationConfig: {
         responseMimeType: "application/json",
@@ -188,7 +201,6 @@ export const processImageOCR = createServerFn({ method: "POST" })
       status: "ready",
     }));
 
-    // 3. Save to Supabase
     const { error } = await supabase.from("words").insert(rows);
     if (error) throw new Error(error.message);
 
