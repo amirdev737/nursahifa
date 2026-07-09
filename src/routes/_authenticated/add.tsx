@@ -1,7 +1,8 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState, useRef } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { generateWordData, extractWordsFromImage } from "@/lib/ai.functions";
+import { generateWordData } from "@/lib/ai.functions";
+import { processImageOCR } from "@/lib/ocr.functions";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { toast } from "sonner";
 import { Loader2, Sparkles, ArrowRight, Camera, ImagePlus, X, FileText } from "lucide-react";
@@ -23,7 +24,7 @@ function fileToDataUrl(file: File): Promise<string> {
 function AddPage() {
   const navigate = useNavigate();
   const generate = useServerFn(generateWordData);
-  const extract = useServerFn(extractWordsFromImage);
+  const ocr = useServerFn(processImageOCR);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [extracting, setExtracting] = useState(false);
@@ -38,19 +39,10 @@ function AddPage() {
       setExtracting(true);
       const dataUrl = await fileToDataUrl(file);
       setPreview(dataUrl);
-      const res = await extract({ data: { imageDataUrl: dataUrl } });
-      if (!res.words.length) {
-        toast.error("Rasmdan inglizcha so'z topilmadi");
-        return;
-      }
-      const merged = Array.from(
-        new Set([
-          ...input.split(/[\n,]+/).map((w) => w.trim()).filter(Boolean),
-          ...res.words,
-        ])
-      );
-      setInput(merged.join("\n"));
-      toast.success(`${res.words.length} ta so'z topildi`);
+      const res = await ocr({ data: { imageDataUrl: dataUrl } });
+      toast.success(`${res.inserted} ta so'z kartochkaga aylandi`);
+      setPreview(null);
+      navigate({ to: "/feed" });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Rasmni o'qib bo'lmadi");
     } finally {
