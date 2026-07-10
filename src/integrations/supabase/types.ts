@@ -59,6 +59,41 @@ export type Database = {
         }
         Relationships: []
       }
+      review_history: {
+        Row: {
+          id: string
+          interval_minutes: number
+          rating: string
+          reviewed_at: string
+          user_id: string
+          word_id: string
+        }
+        Insert: {
+          id?: string
+          interval_minutes: number
+          rating: string
+          reviewed_at?: string
+          user_id: string
+          word_id: string
+        }
+        Update: {
+          id?: string
+          interval_minutes?: number
+          rating?: string
+          reviewed_at?: string
+          user_id?: string
+          word_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "review_history_word_id_fkey"
+            columns: ["word_id"]
+            isOneToOne: false
+            referencedRelation: "words"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       telegram_feedback_map: {
         Row: {
           admin_message_id: number
@@ -106,8 +141,13 @@ export type Database = {
           example_uz: string | null
           explanation: string | null
           id: string
+          interval_minutes: number
           ipa: string | null
           is_favorite: boolean
+          last_reviewed_at: string | null
+          mastery_level: string
+          next_review_at: string
+          review_count: number
           status: string
           synonyms: string[] | null
           translation_uz: string | null
@@ -121,8 +161,13 @@ export type Database = {
           example_uz?: string | null
           explanation?: string | null
           id?: string
+          interval_minutes?: number
           ipa?: string | null
           is_favorite?: boolean
+          last_reviewed_at?: string | null
+          mastery_level?: string
+          next_review_at?: string
+          review_count?: number
           status?: string
           synonyms?: string[] | null
           translation_uz?: string | null
@@ -136,8 +181,13 @@ export type Database = {
           example_uz?: string | null
           explanation?: string | null
           id?: string
+          interval_minutes?: number
           ipa?: string | null
           is_favorite?: boolean
+          last_reviewed_at?: string | null
+          mastery_level?: string
+          next_review_at?: string
+          review_count?: number
           status?: string
           synonyms?: string[] | null
           translation_uz?: string | null
