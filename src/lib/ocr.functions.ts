@@ -119,7 +119,7 @@ export const extractWordsFromImageOCR = createServerFn({ method: "POST" })
     const mimeType = match[1];
     const base64 = match[2];
 
-    const rawText = await runHuggingFaceOCR(base64, mimeType);
+    const rawText = await runOcrSpace(base64, mimeType);
     const words = tokenizeEnglishWords(rawText);
     if (words.length === 0) throw new Error("Rasmdan inglizcha so'z topilmadi");
     return { words };
