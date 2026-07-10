@@ -3,58 +3,44 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const GEMINI_MODEL = "gemini-2.5-flash";
 
-// ---------- Hugging Face OCR ----------
-async function runHuggingFaceOCR(base64: string, mimeType: string): Promise<string> {
-  const url = process.env.HUGGINGFACE_OCR_URL;
-  const token = process.env.HUGGINGFACE_API_KEY;
-  if (!url) throw new Error("HUGGINGFACE_OCR_URL sozlanmagan");
-  if (!token) throw new Error("HUGGINGFACE_API_KEY sozlanmagan");
+// ---------- OCR.Space ----------
+async function runOcrSpace(base64: string, mimeType: string): Promise<string> {
+  const apiKey = process.env.OCR_SPACE_API_KEY;
+  if (!apiKey) throw new Error("OCR_SPACE_API_KEY sozlanmagan");
 
-  const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+  const form = new FormData();
+  form.append("language", "eng");
+  form.append("isOverlayRequired", "false");
+  form.append("OCREngine", "2");
+  form.append("scale", "true");
+  form.append("detectOrientation", "true");
+  form.append("base64Image", `data:${mimeType || "image/jpeg"};base64,${base64}`);
 
-  const resp = await fetch(url, {
+  const resp = await fetch("https://api.ocr.space/parse/image", {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": mimeType || "application/octet-stream",
-      Accept: "application/json",
-    },
-    body: bytes,
+    headers: { apikey: apiKey },
+    body: form,
   });
 
   if (!resp.ok) {
     const errText = await resp.text().catch(() => "");
-    console.error("HF OCR error", resp.status, errText.slice(0, 500));
-    if (resp.status === 401 || resp.status === 403) throw new Error("HF token noto'g'ri yoki ruxsat yo'q");
-    if (resp.status === 503) throw new Error("OCR modeli hozircha band. Birozdan keyin urinib ko'ring.");
+    console.error("OCR.Space error", resp.status, errText.slice(0, 500));
+    if (resp.status === 401 || resp.status === 403) throw new Error("OCR.Space kaliti noto'g'ri");
     throw new Error(`OCR xizmati xatosi (${resp.status})`);
   }
 
-  const ct = resp.headers.get("content-type") ?? "";
-  if (ct.includes("application/json")) {
-    const data: any = await resp.json();
-    return extractTextFromHFResponse(data);
+  const data: any = await resp.json();
+  if (data?.IsErroredOnProcessing) {
+    const msg = Array.isArray(data?.ErrorMessage) ? data.ErrorMessage.join("; ") : String(data?.ErrorMessage ?? "OCR xatosi");
+    console.error("OCR.Space processing error", msg);
+    throw new Error(msg || "OCR matnni o'qiy olmadi");
   }
-  return (await resp.text()).trim();
+
+  const results = Array.isArray(data?.ParsedResults) ? data.ParsedResults : [];
+  const text = results.map((r: any) => r?.ParsedText ?? "").join("\n").trim();
+  return text;
 }
 
-function extractTextFromHFResponse(data: any): string {
-  if (typeof data === "string") return data;
-  if (Array.isArray(data)) {
-    return data
-      .map((d) => d?.generated_text ?? d?.text ?? d?.transcription ?? (typeof d === "string" ? d : ""))
-      .filter(Boolean)
-      .join("\n");
-  }
-  return (
-    data?.generated_text ??
-    data?.text ??
-    data?.transcription ??
-    data?.output_text ??
-    (Array.isArray(data?.predictions) ? data.predictions.map((p: any) => p?.text ?? "").join("\n") : "") ??
-    ""
-  );
-}
 
 function tokenizeEnglishWords(text: string): string[] {
   const cleaned = text.replace(/[^A-Za-z'\-\s]/g, " ").toLowerCase();
@@ -133,7 +119,7 @@ export const extractWordsFromImageOCR = createServerFn({ method: "POST" })
     const mimeType = match[1];
     const base64 = match[2];
 
-    const rawText = await runHuggingFaceOCR(base64, mimeType);
+    const rawText = await runOcrSpace(base64, mimeType);
     const words = tokenizeEnglishWords(rawText);
     if (words.length === 0) throw new Error("Rasmdan inglizcha so'z topilmadi");
     return { words };
