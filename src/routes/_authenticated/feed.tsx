@@ -1,231 +1,185 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState, useCallback, useMemo, useRef } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Flashcard, type WordCard } from "@/components/Flashcard";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { toast } from "sonner";
-import { Loader2, Plus, Sparkles, Shuffle, Check, X } from "lucide-react";
+import {
+  Loader2, Plus, Sparkles, Volume2, Heart, RotateCcw, CheckCircle2,
+} from "lucide-react";
+import type { WordCard } from "@/components/Flashcard";
+import {
+  type Rating, RATING_LABEL_UZ, RATING_INTERVAL_LABEL_UZ,
+  computeNextReview, nextMasteryLevel,
+} from "@/lib/srs";
 
 export const Route = createFileRoute("/_authenticated/feed")({
-  head: () => ({ meta: [{ title: "Lenta — VocabFlow" }] }),
+  head: () => ({ meta: [{ title: "Bugungi darsim — VocabFlow" }] }),
   component: Feed,
 });
 
-const CARDS_PER_CHUNK = 5;
-const POS_KEY = "vf-feed-pos";
-const MIX_KEY = "vf-feed-mix";
-const SEED_KEY = "vf-feed-seed";
+type SrsCard = WordCard & {
+  review_count: number;
+  mastery_level: string;
+  next_review_at: string;
+};
 
-type FeedItem =
-  | { kind: "card"; key: string; card: WordCard; startWithUz: boolean }
-  | { kind: "quiz"; key: string; correct: WordCard; choices: string[] };
+type Stats = {
+  dueToday: number;
+  newCount: number;
+  learningCount: number;
+  masteredCount: number;
+  totalReviews: number;
+};
 
-function mulberry32(seed: number) {
-  let a = seed >>> 0;
-  return function () {
-    a |= 0; a = (a + 0x6D2B79F5) | 0;
-    let t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
+function speak(text: string) {
+  if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = "en-US";
+  u.rate = 0.9;
+  window.speechSynthesis.speak(u);
 }
 
-function seededShuffle<T>(arr: T[], rand: () => number): T[] {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(rand() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
-// Audio feedback helpers (no asset files needed)
-let _audioCtx: AudioContext | null = null;
-function getAudioCtx(): AudioContext | null {
-  if (typeof window === "undefined") return null;
-  if (!_audioCtx) {
-    const Ctx = (window as any).AudioContext || (window as any).webkitAudioContext;
-    if (!Ctx) return null;
-    _audioCtx = new Ctx();
-  }
-  return _audioCtx;
-}
-function tone(freq: number, dur = 0.12, type: OscillatorType = "sine", gain = 0.08) {
-  const ctx = getAudioCtx();
-  if (!ctx) return;
-  const t0 = ctx.currentTime;
-  const osc = ctx.createOscillator();
-  const g = ctx.createGain();
-  osc.type = type;
-  osc.frequency.setValueAtTime(freq, t0);
-  g.gain.setValueAtTime(0, t0);
-  g.gain.linearRampToValueAtTime(gain, t0 + 0.01);
-  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-  osc.connect(g).connect(ctx.destination);
-  osc.start(t0);
-  osc.stop(t0 + dur);
-}
-const playClick = () => tone(620, 0.06, "triangle", 0.05);
-const playCorrect = () => { tone(660, 0.1, "sine", 0.08); setTimeout(() => tone(880, 0.16, "sine", 0.08), 90); };
-const playWrong = () => tone(180, 0.18, "square", 0.05);
-const vibe = (p: number | number[]) => { if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate?.(p as any); };
+const vibe = (p: number | number[]) => {
+  if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate?.(p as any);
+};
 
 function Feed() {
-  const [cards, setCards] = useState<WordCard[] | null>(null);
-  const [mixed, setMixed] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    return localStorage.getItem(MIX_KEY) === "1";
-  });
-  const [unlockedChunks, setUnlockedChunks] = useState(1);
-  const [solvedQuizzes, setSolvedQuizzes] = useState<Set<number>>(new Set());
-  const scrollerRef = useRef<HTMLDivElement>(null);
-  const restoredRef = useRef(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [queue, setQueue] = useState<SrsCard[] | null>(null);
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [flipped, setFlipped] = useState(false);
+  const [reviewed, setReviewed] = useState(0);
+  const [submitting, setSubmitting] = useState(false);
 
-  // Stable seed per shuffle "session" - rotates when user toggles shuffle
-  const [sessionSeed, setSessionSeed] = useState<number>(() => {
-    if (typeof window === "undefined") return 1;
-    const stored = localStorage.getItem(SEED_KEY);
-    if (stored) return parseInt(stored, 10);
-    const s = Math.floor(Math.random() * 0x7fffffff);
-    localStorage.setItem(SEED_KEY, String(s));
-    return s;
-  });
+  const loadAll = useCallback(async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    setUserId(user.id);
 
-  useEffect(() => {
-    supabase
-      .from("words")
-      .select("id,word,translation_uz,ipa,example,example_uz,explanation,synonyms,antonyms,is_favorite")
-      .eq("status", "ready")
-      .order("created_at", { ascending: false })
-      .limit(200)
-      .then(({ data, error }) => {
-        if (error) toast.error(error.message);
-        setCards((data as WordCard[]) ?? []);
-      });
+    const nowIso = new Date().toISOString();
+    const endOfDay = new Date();
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const [dueRes, allRes, revRes, dueTodayRes] = await Promise.all([
+      supabase
+        .from("words")
+        .select("id,word,translation_uz,ipa,example,example_uz,explanation,synonyms,antonyms,is_favorite,review_count,mastery_level,next_review_at")
+        .eq("user_id", user.id)
+        .eq("status", "ready")
+        .lte("next_review_at", nowIso)
+        .order("next_review_at", { ascending: true })
+        .limit(50),
+      supabase
+        .from("words")
+        .select("mastery_level", { count: "exact" })
+        .eq("user_id", user.id)
+        .eq("status", "ready"),
+      supabase
+        .from("review_history")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id),
+      supabase
+        .from("words")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("status", "ready")
+        .lte("next_review_at", endOfDay.toISOString()),
+    ]);
+
+    if (dueRes.error) toast.error(dueRes.error.message);
+    setQueue((dueRes.data as SrsCard[]) ?? []);
+
+    const rows = (allRes.data ?? []) as { mastery_level: string }[];
+    setStats({
+      dueToday: dueTodayRes.count ?? 0,
+      newCount: rows.filter((r) => r.mastery_level === "new").length,
+      learningCount: rows.filter((r) => r.mastery_level === "learning").length,
+      masteredCount: rows.filter((r) => r.mastery_level === "mastered").length,
+      totalReviews: revRes.count ?? 0,
+    });
   }, []);
 
-  // Restore last position
-  const savedPos = useMemo(() => {
-    if (typeof window === "undefined") return 0;
-    return parseInt(localStorage.getItem(POS_KEY) || "0", 10) || 0;
-  }, []);
-  // Make sure enough chunks are unlocked to reach saved pos
-  useEffect(() => {
-    if (!cards || cards.length === 0) return;
-    const neededChunk = Math.floor(savedPos / (CARDS_PER_CHUNK + 1)) + 1;
-    if (neededChunk > unlockedChunks) setUnlockedChunks(neededChunk);
-    // assume any quiz prior to saved pos was solved
-    const solved = new Set<number>();
-    for (let i = 0; i < neededChunk - 1; i++) solved.add(i);
-    setSolvedQuizzes(solved);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cards]);
+  useEffect(() => { loadAll(); }, [loadAll]);
+
+  const current = queue?.[0] ?? null;
+
+  useEffect(() => { setFlipped(false); }, [current?.id]);
+
+  const rate = useCallback(async (rating: Rating) => {
+    if (!current || !userId || submitting) return;
+    setSubmitting(true);
+    vibe(rating === "again" ? [10, 30, 10] : 15);
+    const { intervalMinutes, nextReviewAt } = computeNextReview(rating);
+    const newCount = (current.review_count ?? 0) + 1;
+    const mastery = nextMasteryLevel(current.mastery_level ?? "new", rating, newCount);
+
+    // Optimistic UI
+    setQueue((q) => (q ? q.slice(1) : q));
+    setFlipped(false);
+    setReviewed((n) => n + 1);
+
+    const [{ error: uErr }, { error: hErr }] = await Promise.all([
+      supabase
+        .from("words")
+        .update({
+          next_review_at: nextReviewAt,
+          last_reviewed_at: new Date().toISOString(),
+          review_count: newCount,
+          interval_minutes: intervalMinutes,
+          mastery_level: mastery,
+        })
+        .eq("id", current.id),
+      supabase.from("review_history").insert({
+        user_id: userId,
+        word_id: current.id,
+        rating,
+        interval_minutes: intervalMinutes,
+      }),
+    ]);
+    if (uErr) toast.error(uErr.message);
+    if (hErr) toast.error(hErr.message);
+
+    // Refresh stats in background
+    setStats((s) => s ? {
+      ...s,
+      totalReviews: s.totalReviews + 1,
+      newCount: current.mastery_level === "new" ? Math.max(0, s.newCount - 1) : s.newCount,
+      learningCount:
+        mastery === "learning" && current.mastery_level !== "learning"
+          ? s.learningCount + 1
+          : mastery !== "learning" && current.mastery_level === "learning"
+            ? Math.max(0, s.learningCount - 1)
+            : s.learningCount,
+      masteredCount:
+        mastery === "mastered" && current.mastery_level !== "mastered"
+          ? s.masteredCount + 1
+          : s.masteredCount,
+      dueToday: Math.max(0, s.dueToday - 1),
+    } : s);
+    setSubmitting(false);
+  }, [current, userId, submitting]);
 
   const toggleFav = useCallback(async (id: string, value: boolean) => {
-    setCards((prev) => prev?.map((c) => (c.id === id ? { ...c, is_favorite: value } : c)) ?? null);
+    setQueue((q) => q?.map((c) => c.id === id ? { ...c, is_favorite: value } : c) ?? q);
     const { error } = await supabase.from("words").update({ is_favorite: value }).eq("id", id);
     if (error) toast.error(error.message);
   }, []);
 
-  // Build items - infinite by cycling through cards
-  const items = useMemo<FeedItem[]>(() => {
-    if (!cards || cards.length === 0) return [];
-    const out: FeedItem[] = [];
-    const eligible = cards.filter((c) => c.translation_uz);
-    const canQuiz = eligible.length >= 4;
+  const header = useMemo(() => (
+    <div className="flex items-center justify-between px-4 pt-3">
+      <div>
+        <h1 className="text-lg font-bold tracking-tight">Bugungi darsim</h1>
+        <p className="text-[11px] text-muted-foreground">
+          Bugun: <span className="font-semibold text-[var(--brand-2)]">{stats?.dueToday ?? 0}</span>
+          {" · "}Bajarildi: {reviewed}
+        </p>
+      </div>
+      <ThemeToggle />
+    </div>
+  ), [stats?.dueToday, reviewed]);
 
-    // When mixed: shuffle base order of cards using sessionSeed
-    const baseRand = mulberry32(sessionSeed);
-    const baseOrder = mixed
-      ? seededShuffle(cards.map((_, i) => i), baseRand)
-      : cards.map((_, i) => i);
-    const quizOrder = seededShuffle(eligible.map((_, i) => i), mulberry32(sessionSeed ^ 0x5a5a5a5a));
-
-    for (let chunk = 0; chunk < unlockedChunks; chunk++) {
-      for (let i = 0; i < CARDS_PER_CHUNK; i++) {
-        const pos = (chunk * CARDS_PER_CHUNK + i) % baseOrder.length;
-        const card = cards[baseOrder[pos]];
-        // when mixed, randomize starting language per card
-        const langRand = mulberry32(sessionSeed + chunk * 73856093 + i * 19349663);
-        out.push({
-          kind: "card",
-          key: `c-${chunk}-${i}-${card.id}`,
-          card,
-          startWithUz: mixed ? langRand() > 0.5 : false,
-        });
-      }
-      if (canQuiz) {
-        const safeCorrect = eligible[quizOrder[chunk % quizOrder.length]];
-        const rand = mulberry32(sessionSeed + chunk * 1013904223 + 1664525);
-        const distractorPool = eligible.filter((c) => c.id !== safeCorrect.id);
-        const distractors = seededShuffle(distractorPool, rand).slice(0, 3).map((c) => c.translation_uz!);
-        const choices = seededShuffle([safeCorrect.translation_uz!, ...distractors], rand);
-        out.push({ kind: "quiz", key: `q-${chunk}-${safeCorrect.id}`, correct: safeCorrect, choices });
-      }
-    }
-    return out;
-  }, [cards, unlockedChunks, mixed, sessionSeed]);
-
-  // Restore scroll position once items are rendered
-  useEffect(() => {
-    if (restoredRef.current) return;
-    if (!cards || cards.length === 0) return;
-    const el = scrollerRef.current;
-    if (!el) return;
-    if (items.length === 0) return;
-    const idx = Math.min(savedPos, items.length - 1);
-    requestAnimationFrame(() => {
-      el.scrollTo({ top: idx * el.clientHeight, behavior: "auto" });
-      restoredRef.current = true;
-    });
-  }, [items, cards, savedPos]);
-
-  // Save scroll position
-  useEffect(() => {
-    const el = scrollerRef.current;
-    if (!el) return;
-    let raf = 0;
-    const onScroll = () => {
-      if (raf) cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => {
-        const idx = Math.round(el.scrollTop / el.clientHeight);
-        try { localStorage.setItem(POS_KEY, String(idx)); } catch {}
-      });
-    };
-    el.addEventListener("scroll", onScroll, { passive: true });
-    return () => { el.removeEventListener("scroll", onScroll); if (raf) cancelAnimationFrame(raf); };
-  }, [cards]);
-
-  const onSolveQuiz = useCallback((chunk: number) => {
-    setSolvedQuizzes((prev) => {
-      const n = new Set(prev);
-      n.add(chunk);
-      return n;
-    });
-    setUnlockedChunks((c) => Math.max(c, chunk + 2));
-    setTimeout(() => {
-      const el = scrollerRef.current;
-      if (!el) return;
-      el.scrollBy({ top: el.clientHeight, behavior: "smooth" });
-    }, 400);
-  }, []);
-
-  const toggleShuffle = () => {
-    vibe(12);
-    playClick();
-    setMixed((m) => {
-      const next = !m;
-      try { localStorage.setItem(MIX_KEY, next ? "1" : "0"); } catch {}
-      return next;
-    });
-    // new seed -> shuffles card order and languages again
-    const s = Math.floor(Math.random() * 0x7fffffff);
-    try { localStorage.setItem(SEED_KEY, String(s)); } catch {}
-    setSessionSeed(s);
-  };
-
-  if (cards === null) {
+  if (queue === null) {
     return (
       <div className="flex h-[calc(100dvh-72px)] items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -233,152 +187,206 @@ function Feed() {
     );
   }
 
-  if (cards.length === 0) {
-    return (
-      <div className="flex h-[calc(100dvh-72px)] flex-col items-center justify-center px-6 text-center bg-mesh">
-        <div className="grid h-16 w-16 place-items-center rounded-3xl bg-gradient-brand shadow-glow">
-          <Sparkles className="h-8 w-8 text-white" />
-        </div>
-        <h2 className="mt-6 text-2xl font-bold">Lenta hozircha bo'sh</h2>
-        <p className="mt-2 max-w-xs text-sm text-muted-foreground">
-          Birinchi inglizcha so'zlaringizni qo'shing — biz chiroyli kartochkalar tayyorlab beramiz.
-        </p>
-        <Link
-          to="/add"
-          className="mt-6 inline-flex items-center gap-2 rounded-full bg-gradient-brand px-6 py-3 text-sm font-semibold text-white shadow-glow active:scale-95 transition"
-        >
-          <Plus className="h-4 w-4" /> Birinchi so'zni qo'shish
-        </Link>
-      </div>
-    );
-  }
-
   return (
-    <div className="relative">
-      {/* Moved to top-LEFT so the Heart (like) button on each card stays clear on the right */}
-      <div className="fixed left-3 top-3 z-40 flex items-center gap-2">
-        <ThemeToggle />
-        <div className="glass-chip relative flex items-center rounded-full p-0.5 text-[11px] font-semibold">
-          <span
-            aria-hidden
-            className={`absolute top-0.5 bottom-0.5 w-1/2 rounded-full bg-gradient-brand shadow-glow transition-transform duration-300 ease-out ${
-              mixed ? "translate-x-full" : "translate-x-0"
-            }`}
-          />
-          <button
-            onClick={() => { if (mixed) toggleShuffle(); }}
-            className={`relative z-10 flex items-center gap-1 rounded-full px-3 py-1.5 transition active:scale-90 ${
-              !mixed ? "text-[var(--brand-2)]" : "text-foreground/70"
-            }`}
-          >
-            Tartibli
-          </button>
-          <button
-            onClick={() => { if (!mixed) toggleShuffle(); }}
-            className={`relative z-10 flex items-center gap-1 rounded-full px-3 py-1.5 transition active:scale-90 ${
-              mixed ? "text-[var(--brand-2)]" : "text-foreground/70"
-            }`}
-          >
-            <Shuffle className="h-3 w-3" /> Aralash
-          </button>
+    <div className="mx-auto flex h-[calc(100dvh-72px)] max-w-md flex-col">
+      {header}
+
+      {stats && (
+        <div className="mt-2 grid grid-cols-4 gap-1.5 px-4">
+          <StatChip label="Yangi" value={stats.newCount} tone="brand" />
+          <StatChip label="O'rganilyapti" value={stats.learningCount} tone="warn" />
+          <StatChip label="O'zlashtirildi" value={stats.masteredCount} tone="ok" />
+          <StatChip label="Takror" value={stats.totalReviews} tone="muted" />
         </div>
-      </div>
+      )}
 
-
-
-
-      <div ref={scrollerRef} className="scroll-snap-y no-scrollbar h-[calc(100dvh-72px)] overflow-y-auto">
-        {items.map((it, idx) => {
-          if (it.kind === "card") {
-            return <Flashcard key={it.key} card={it.card} onToggleFavorite={toggleFav} startWithUz={it.startWithUz} />;
-          }
-          const chunk = Math.floor(idx / (CARDS_PER_CHUNK + 1));
-          const solved = solvedQuizzes.has(chunk);
-          return (
-            <QuizGate
-              key={it.key}
-              data={it}
-              solved={solved}
-              onSolve={() => onSolveQuiz(chunk)}
-            />
-          );
-        })}
+      <div className="relative mt-3 flex-1 min-h-0 px-4 pb-3">
+        {current ? (
+          <ReviewCard
+            key={current.id}
+            card={current}
+            flipped={flipped}
+            onFlip={() => { vibe(8); setFlipped((f) => !f); }}
+            onSpeak={() => speak(current.word)}
+            onFav={() => toggleFav(current.id, !current.is_favorite)}
+            onRate={rate}
+            disabled={submitting}
+          />
+        ) : (
+          <EmptyState reviewed={reviewed} onReload={loadAll} />
+        )}
       </div>
     </div>
   );
 }
 
-function QuizGate({
-  data,
-  solved,
-  onSolve,
-}: {
-  data: Extract<FeedItem, { kind: "quiz" }>;
-  solved: boolean;
-  onSolve: () => void;
-}) {
-  const [picked, setPicked] = useState<string | null>(null);
-  const [wrong, setWrong] = useState<Set<string>>(new Set());
-
-  const handle = (choice: string) => {
-    if (solved) return;
-    if (choice === data.correct.translation_uz) {
-      vibe([20, 40, 30]);
-      playCorrect();
-      setPicked(choice);
-      setTimeout(onSolve, 650);
-    } else {
-      vibe(120);
-      playWrong();
-      setWrong((w) => new Set(w).add(choice));
-    }
+function StatChip({
+  label, value, tone,
+}: { label: string; value: number; tone: "brand" | "warn" | "ok" | "muted" }) {
+  const colors: Record<typeof tone, string> = {
+    brand: "text-[var(--brand-2)]",
+    warn: "text-amber-400",
+    ok: "text-emerald-400",
+    muted: "text-foreground/80",
   };
-
   return (
-    <article
-      className="snap-start-always relative flex h-[calc(100dvh-72px)] w-full items-center justify-center px-3 py-2"
-      style={{ scrollSnapStop: "always" }}
-    >
-      <div className="flex h-full w-full max-w-md flex-col rounded-[2rem] glass-card p-5 text-white">
-        <div className="flex items-center justify-between">
-          <span className="glass-chip rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-[var(--brand-2)]">
-            ⚡ Mini test
+    <div className="rounded-2xl border border-white/15 bg-white/[0.06] px-2 py-2 text-center backdrop-blur-xl">
+      <p className={`text-lg font-extrabold leading-none ${colors[tone]}`}>{value}</p>
+      <p className="mt-1 text-[9px] uppercase tracking-wider text-muted-foreground truncate">{label}</p>
+    </div>
+  );
+}
+
+function ReviewCard({
+  card, flipped, onFlip, onSpeak, onFav, onRate, disabled,
+}: {
+  card: SrsCard;
+  flipped: boolean;
+  onFlip: () => void;
+  onSpeak: () => void;
+  onFav: () => void;
+  onRate: (r: Rating) => void;
+  disabled: boolean;
+}) {
+  return (
+    <div className="flex h-full w-full flex-col gap-3">
+      <button
+        type="button"
+        onClick={onFlip}
+        className="relative flex flex-1 min-h-0 w-full flex-col overflow-hidden rounded-[2rem] glass-card p-4 text-left text-white animate-float-up active:scale-[0.99] transition-transform"
+      >
+        <div className="absolute inset-0 bg-mesh opacity-30 pointer-events-none" />
+
+        <div className="relative flex items-start justify-between">
+          <span className="glass-chip rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--brand-2)]">
+            {card.mastery_level === "mastered" ? "O'zlashtirilgan"
+              : card.mastery_level === "learning" ? "O'rganilyapti" : "Yangi"}
           </span>
-          {solved && <Check className="h-5 w-5 text-[var(--brand-2)]" />}
+          <span
+            onClick={(e) => { e.stopPropagation(); onFav(); }}
+            className="grid h-10 w-10 place-items-center rounded-full glass-chip active:scale-90"
+            aria-label="Saqlash"
+          >
+            <Heart className={`h-4 w-4 ${card.is_favorite ? "fill-[var(--brand-2)] text-[var(--brand-2)]" : ""}`} />
+          </span>
         </div>
-        <p className="mt-6 text-center text-xs uppercase tracking-wider text-white/60">Tarjimani toping</p>
-        <h2 className="mt-2 text-center text-4xl font-extrabold tracking-tight">{data.correct.word}</h2>
-        {data.correct.ipa && (
-          <p className="mt-1 text-center text-xs text-white/60 font-mono">/{data.correct.ipa.replace(/^\/|\/$/g, "")}/</p>
+
+        <div className="relative mt-3 flex flex-col items-center text-center shrink-0">
+          <h2 className="text-[clamp(1.6rem,7.5vw,2.6rem)] font-extrabold leading-tight break-words">
+            {card.word}
+          </h2>
+          {card.ipa && (
+            <p className="mt-0.5 font-mono text-[11px] text-white/70">/{card.ipa.replace(/^\/|\/$/g, "")}/</p>
+          )}
+          <span
+            onClick={(e) => { e.stopPropagation(); onSpeak(); }}
+            className="mt-1.5 inline-flex items-center gap-1.5 rounded-full glass-chip px-2.5 py-1 text-[11px] font-semibold text-[var(--brand-2)] active:scale-90"
+          >
+            <Volume2 className="h-3 w-3" /> Talaffuz
+          </span>
+        </div>
+
+        {!flipped ? (
+          <div className="relative mt-auto pt-3 text-center text-[11px] text-white/60">
+            Javobni ko'rish uchun bosing
+          </div>
+        ) : (
+          <div className="relative mt-3 flex-1 min-h-0 overflow-hidden flex flex-col gap-2 text-[12px]">
+            <div className="rounded-2xl glass-inner p-3 text-center shrink-0">
+              <p className="text-[9px] uppercase tracking-wider text-white/60">O'zbekcha</p>
+              <p className="mt-0.5 text-[clamp(1.1rem,5vw,1.4rem)] font-bold text-[var(--brand-2)] break-words leading-tight">
+                {card.translation_uz ?? "—"}
+              </p>
+            </div>
+            {card.example && (
+              <div className="rounded-2xl glass-inner p-2.5 shrink">
+                <p className="italic leading-snug line-clamp-2 text-[12px]">"{card.example}"</p>
+                {card.example_uz && (
+                  <p className="mt-0.5 text-white/80 line-clamp-2 text-[11px]">— {card.example_uz}</p>
+                )}
+              </div>
+            )}
+            {card.explanation && (
+              <div className="flex gap-1.5 rounded-2xl glass-inner p-2.5 shrink min-h-0">
+                <Sparkles className="mt-0.5 h-3 w-3 shrink-0 text-[var(--brand-2)]" />
+                <p className="leading-snug line-clamp-3 text-[12px] text-white/95">{card.explanation}</p>
+              </div>
+            )}
+          </div>
         )}
+      </button>
 
-        <div className="mt-6 grid gap-2.5">
-          {data.choices.map((choice) => {
-            const isCorrect = (solved || picked) && choice === data.correct.translation_uz;
-            const isWrong = wrong.has(choice);
-            return (
-              <button
-                key={choice}
-                onClick={() => handle(choice)}
-                disabled={solved || isWrong}
-                className={`flex items-center justify-between rounded-2xl px-4 py-3.5 text-left text-sm font-semibold transition active:scale-[0.97]
-                  ${isCorrect ? "bg-[var(--brand-2)]/25 text-[var(--brand-2)] ring-2 ring-[var(--brand-2)]/60" : ""}
-                  ${isWrong ? "bg-destructive/15 text-destructive/90 ring-1 ring-destructive/40 opacity-60" : ""}
-                  ${!isCorrect && !isWrong ? "glass-inner hover:bg-white/15" : ""}
-                `}
-              >
-                <span>{choice}</span>
-                {isCorrect && <Check className="h-4 w-4" />}
-                {isWrong && <X className="h-4 w-4" />}
-              </button>
-            );
-          })}
-        </div>
-
-        <p className="mt-auto pt-4 text-center text-[11px] text-white/55">
-          {solved ? "Davom etish uchun pastga suring" : "To'g'ri javobni topmaguningizcha davom eta olmaysiz"}
-        </p>
+      {/* Review actions */}
+      <div className="shrink-0">
+        {!flipped ? (
+          <button
+            onClick={onFlip}
+            className="w-full rounded-2xl bg-gradient-brand py-3 text-sm font-semibold text-white shadow-glow active:scale-[0.98] transition"
+          >
+            Javobni ko'rsatish
+          </button>
+        ) : (
+          <div className="grid grid-cols-4 gap-1.5">
+            <RateBtn rating="again" onClick={onRate} disabled={disabled} />
+            <RateBtn rating="hard" onClick={onRate} disabled={disabled} />
+            <RateBtn rating="good" onClick={onRate} disabled={disabled} />
+            <RateBtn rating="easy" onClick={onRate} disabled={disabled} />
+          </div>
+        )}
       </div>
-    </article>
+    </div>
+  );
+}
+
+function RateBtn({
+  rating, onClick, disabled,
+}: { rating: Rating; onClick: (r: Rating) => void; disabled: boolean }) {
+  const tone: Record<Rating, string> = {
+    again: "bg-red-500/15 border-red-400/40 text-red-300",
+    hard: "bg-amber-500/15 border-amber-400/40 text-amber-300",
+    good: "bg-emerald-500/15 border-emerald-400/40 text-emerald-300",
+    easy: "bg-sky-500/15 border-sky-400/40 text-sky-300",
+  };
+  return (
+    <button
+      onClick={() => onClick(rating)}
+      disabled={disabled}
+      className={`flex flex-col items-center justify-center rounded-2xl border px-2 py-2.5 text-center transition active:scale-95 disabled:opacity-50 ${tone[rating]}`}
+    >
+      <span className="text-[13px] font-bold leading-none">{RATING_LABEL_UZ[rating]}</span>
+      <span className="mt-1 text-[9px] font-medium opacity-80">{RATING_INTERVAL_LABEL_UZ[rating]}</span>
+    </button>
+  );
+}
+
+function EmptyState({ reviewed, onReload }: { reviewed: number; onReload: () => void }) {
+  return (
+    <div className="flex h-full flex-col items-center justify-center px-6 text-center">
+      <div className="grid h-16 w-16 place-items-center rounded-3xl bg-gradient-brand shadow-glow">
+        <CheckCircle2 className="h-8 w-8 text-white" />
+      </div>
+      <h2 className="mt-4 text-2xl font-bold">
+        {reviewed > 0 ? "Ajoyib! Bugungi dars tugadi" : "Hozircha takrorlanadigan kartochka yo'q"}
+      </h2>
+      <p className="mt-2 max-w-xs text-sm text-muted-foreground">
+        {reviewed > 0
+          ? `Siz ${reviewed} ta kartochkani takrorladingiz. Keyingi kartochkalar rejaga ko'ra ko'rinadi.`
+          : "Yangi so'zlar qo'shing yoki keyinroq qaytib keling."}
+      </p>
+      <div className="mt-6 flex gap-3">
+        <button
+          onClick={onReload}
+          className="flex items-center gap-2 rounded-full border border-border bg-card px-5 py-2.5 text-sm font-semibold active:scale-95"
+        >
+          <RotateCcw className="h-4 w-4" /> Yangilash
+        </button>
+        <Link
+          to="/add"
+          className="inline-flex items-center gap-2 rounded-full bg-gradient-brand px-5 py-2.5 text-sm font-semibold text-white shadow-glow active:scale-95"
+        >
+          <Plus className="h-4 w-4" /> So'z qo'shish
+        </Link>
+      </div>
+    </div>
   );
 }
