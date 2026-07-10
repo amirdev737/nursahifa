@@ -9,7 +9,18 @@ export const Route = createFileRoute("/_authenticated/profile")({
   component: Profile,
 });
 
-type Stats = { totalWords: number; favorites: number; quizzes: number; avg: number; bestScore: number };
+type Stats = {
+  totalWords: number;
+  favorites: number;
+  quizzes: number;
+  avg: number;
+  bestScore: number;
+  dueToday: number;
+  newCount: number;
+  learningCount: number;
+  masteredCount: number;
+  totalReviews: number;
+};
 
 function Profile() {
   const navigate = useNavigate();
@@ -25,17 +36,43 @@ function Profile() {
       const { data: prof } = await supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle();
       setName(prof?.display_name ?? user.email?.split("@")[0] ?? "O'quvchi");
 
-      const [{ count: totalWords }, { count: favorites }, { data: quizzes }] = await Promise.all([
-        supabase.from("words").select("*", { count: "exact", head: true }),
-        supabase.from("words").select("*", { count: "exact", head: true }).eq("is_favorite", true),
-        supabase.from("quiz_results").select("score,total"),
+      const endOfDay = new Date();
+      endOfDay.setHours(23, 59, 59, 999);
+      const [
+        { count: totalWords },
+        { count: favorites },
+        { data: quizzes },
+        { data: mastery },
+        { count: dueToday },
+        { count: totalReviews },
+      ] = await Promise.all([
+        supabase.from("words").select("*", { count: "exact", head: true }).eq("user_id", user.id),
+        supabase.from("words").select("*", { count: "exact", head: true }).eq("user_id", user.id).eq("is_favorite", true),
+        supabase.from("quiz_results").select("score,total").eq("user_id", user.id),
+        supabase.from("words").select("mastery_level").eq("user_id", user.id).eq("status", "ready"),
+        supabase.from("words").select("*", { count: "exact", head: true })
+          .eq("user_id", user.id).eq("status", "ready").lte("next_review_at", endOfDay.toISOString()),
+        supabase.from("review_history").select("*", { count: "exact", head: true }).eq("user_id", user.id),
       ]);
       const qs = quizzes ?? [];
       const avg = qs.length ? Math.round((qs.reduce((s, q) => s + q.score / q.total, 0) / qs.length) * 100) : 0;
       const bestScore = qs.length ? Math.max(...qs.map((q) => Math.round((q.score / q.total) * 100))) : 0;
-      setStats({ totalWords: totalWords ?? 0, favorites: favorites ?? 0, quizzes: qs.length, avg, bestScore });
+      const rows = (mastery ?? []) as { mastery_level: string }[];
+      setStats({
+        totalWords: totalWords ?? 0,
+        favorites: favorites ?? 0,
+        quizzes: qs.length,
+        avg,
+        bestScore,
+        dueToday: dueToday ?? 0,
+        newCount: rows.filter((r) => r.mastery_level === "new").length,
+        learningCount: rows.filter((r) => r.mastery_level === "learning").length,
+        masteredCount: rows.filter((r) => r.mastery_level === "mastered").length,
+        totalReviews: totalReviews ?? 0,
+      });
     })();
   }, []);
+
 
   const signOut = async () => {
     await supabase.auth.signOut();
@@ -67,10 +104,14 @@ function Profile() {
         ) : (
           <>
             <div className="mt-4 grid grid-cols-2 gap-2.5">
-              <Stat icon={BookOpen} label="So'zlar" value={stats.totalWords} />
+              <Stat icon={BookOpen} label="Bugun takror" value={stats.dueToday} />
+              <Stat icon={Trophy} label="Jami takrorlar" value={stats.totalReviews} />
+              <Stat icon={BookOpen} label="Yangi" value={stats.newCount} />
+              <Stat icon={BookOpen} label="O'rganilyapti" value={stats.learningCount} />
+              <Stat icon={Trophy} label="O'zlashtirilgan" value={stats.masteredCount} />
               <Stat icon={Heart} label="Saqlangan" value={stats.favorites} />
+              <Stat icon={BookOpen} label="Jami so'zlar" value={stats.totalWords} />
               <Stat icon={Trophy} label="Testlar" value={stats.quizzes} />
-              <Stat icon={Trophy} label="Eng yaxshi" value={`${stats.bestScore}%`} />
             </div>
 
             <div className="mt-3 rounded-3xl border border-white/15 bg-gradient-card p-5 text-white shadow-glow backdrop-blur-2xl">
@@ -80,6 +121,7 @@ function Profile() {
                 <div className="h-full bg-[var(--brand-2)] transition-all" style={{ width: `${stats.avg}%` }} />
               </div>
             </div>
+
           </>
         )}
 
