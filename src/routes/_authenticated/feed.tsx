@@ -268,16 +268,18 @@ function StatChip({
 }
 
 function ReviewCard({
-  card, flipped, onFlip, onSpeak, onFav, onRate, disabled,
+  card, flipped, rated, onFlip, onSpeak, onFav, onRate, disabled,
 }: {
   card: SrsCard;
   flipped: boolean;
+  rated: boolean;
   onFlip: () => void;
   onSpeak: () => void;
   onFav: () => void;
   onRate: (r: Rating) => void;
   disabled: boolean;
 }) {
+
   return (
     <div className="flex h-full w-full flex-col gap-3">
       <div
