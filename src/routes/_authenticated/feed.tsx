@@ -48,9 +48,10 @@ function Feed() {
   const [userId, setUserId] = useState<string | null>(null);
   const [queue, setQueue] = useState<SrsCard[] | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
-  const [flipped, setFlipped] = useState(false);
+  const [flippedIds, setFlippedIds] = useState<Set<string>>(new Set());
+  const [ratedIds, setRatedIds] = useState<Set<string>>(new Set());
   const [reviewed, setReviewed] = useState(0);
-  const [submitting, setSubmitting] = useState(false);
+  const [submittingId, setSubmittingId] = useState<string | null>(null);
 
   const loadAll = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -89,6 +90,9 @@ function Feed() {
 
     if (dueRes.error) toast.error(dueRes.error.message);
     setQueue((dueRes.data as SrsCard[]) ?? []);
+    setFlippedIds(new Set());
+    setRatedIds(new Set());
+    setReviewed(0);
 
     const rows = (allRes.data ?? []) as { mastery_level: string }[];
     setStats({
@@ -102,21 +106,18 @@ function Feed() {
 
   useEffect(() => { loadAll(); }, [loadAll]);
 
-  const current = queue?.[0] ?? null;
+  const rate = useCallback(async (cardId: string, rating: Rating) => {
+    if (!userId || submittingId) return;
+    const card = queue?.find((c) => c.id === cardId);
+    if (!card || ratedIds.has(cardId)) return;
 
-  useEffect(() => { setFlipped(false); }, [current?.id]);
-
-  const rate = useCallback(async (rating: Rating) => {
-    if (!current || !userId || submitting) return;
-    setSubmitting(true);
+    setSubmittingId(cardId);
     vibe(rating === "again" ? [10, 30, 10] : 15);
     const { intervalMinutes, nextReviewAt } = computeNextReview(rating);
-    const newCount = (current.review_count ?? 0) + 1;
-    const mastery = nextMasteryLevel(current.mastery_level ?? "new", rating, newCount);
+    const newCount = (card.review_count ?? 0) + 1;
+    const mastery = nextMasteryLevel(card.mastery_level ?? "new", rating, newCount);
 
-    // Optimistic UI
-    setQueue((q) => (q ? q.slice(1) : q));
-    setFlipped(false);
+    setRatedIds((prev) => new Set(prev).add(cardId));
     setReviewed((n) => n + 1);
 
     const [{ error: uErr }, { error: hErr }] = await Promise.all([
@@ -129,42 +130,51 @@ function Feed() {
           interval_minutes: intervalMinutes,
           mastery_level: mastery,
         })
-        .eq("id", current.id),
+        .eq("id", cardId),
       supabase.from("review_history").insert({
         user_id: userId,
-        word_id: current.id,
+        word_id: cardId,
         rating,
         interval_minutes: intervalMinutes,
       }),
     ]);
-    if (uErr) toast.error(uErr.message);
-    if (hErr) toast.error(hErr.message);
+    if (uErr) toast.error("Saqlab bo'lmadi. Qayta urinib ko'ring.");
+    if (hErr) toast.error("Saqlab bo'lmadi. Qayta urinib ko'ring.");
 
-    // Refresh stats in background
     setStats((s) => s ? {
       ...s,
       totalReviews: s.totalReviews + 1,
-      newCount: current.mastery_level === "new" ? Math.max(0, s.newCount - 1) : s.newCount,
+      newCount: card.mastery_level === "new" ? Math.max(0, s.newCount - 1) : s.newCount,
       learningCount:
-        mastery === "learning" && current.mastery_level !== "learning"
+        mastery === "learning" && card.mastery_level !== "learning"
           ? s.learningCount + 1
-          : mastery !== "learning" && current.mastery_level === "learning"
+          : mastery !== "learning" && card.mastery_level === "learning"
             ? Math.max(0, s.learningCount - 1)
             : s.learningCount,
       masteredCount:
-        mastery === "mastered" && current.mastery_level !== "mastered"
+        mastery === "mastered" && card.mastery_level !== "mastered"
           ? s.masteredCount + 1
           : s.masteredCount,
       dueToday: Math.max(0, s.dueToday - 1),
     } : s);
-    setSubmitting(false);
-  }, [current, userId, submitting]);
+    setSubmittingId(null);
+  }, [queue, userId, submittingId, ratedIds]);
+
+  const flipCard = useCallback((id: string) => {
+    vibe(8);
+    setFlippedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }, []);
 
   const toggleFav = useCallback(async (id: string, value: boolean) => {
     setQueue((q) => q?.map((c) => c.id === id ? { ...c, is_favorite: value } : c) ?? q);
     const { error } = await supabase.from("words").update({ is_favorite: value }).eq("id", id);
-    if (error) toast.error(error.message);
+    if (error) toast.error("Saqlab bo'lmadi. Qayta urinib ko'ring.");
   }, []);
+
 
   const header = useMemo(() => (
     <div className="flex items-center justify-between px-4 pt-3">
@@ -187,38 +197,58 @@ function Feed() {
     );
   }
 
-  return (
-    <div className="mx-auto flex h-[calc(100dvh-72px)] max-w-md flex-col">
-      {header}
-
-      {stats && (
-        <div className="mt-2 grid grid-cols-4 gap-1.5 px-4">
-          <StatChip label="Yangi" value={stats.newCount} tone="brand" />
-          <StatChip label="O'rganilyapti" value={stats.learningCount} tone="warn" />
-          <StatChip label="O'zlashtirildi" value={stats.masteredCount} tone="ok" />
-          <StatChip label="Takror" value={stats.totalReviews} tone="muted" />
-        </div>
-      )}
-
-      <div className="relative mt-3 flex-1 min-h-0 px-4 pb-3">
-        {current ? (
-          <ReviewCard
-            key={current.id}
-            card={current}
-            flipped={flipped}
-            onFlip={() => { vibe(8); setFlipped((f) => !f); }}
-            onSpeak={() => speak(current.word)}
-            onFav={() => toggleFav(current.id, !current.is_favorite)}
-            onRate={rate}
-            disabled={submitting}
-          />
-        ) : (
-          <EmptyState reviewed={reviewed} onReload={loadAll} />
+  if (queue.length === 0) {
+    return (
+      <div className="mx-auto flex h-[calc(100dvh-72px)] max-w-md flex-col">
+        {header}
+        {stats && (
+          <div className="mt-2 grid grid-cols-4 gap-1.5 px-4">
+            <StatChip label="Yangi" value={stats.newCount} tone="brand" />
+            <StatChip label="O'rganilyapti" value={stats.learningCount} tone="warn" />
+            <StatChip label="O'zlashtirildi" value={stats.masteredCount} tone="ok" />
+            <StatChip label="Takror" value={stats.totalReviews} tone="muted" />
+          </div>
         )}
+        <div className="relative mt-3 flex-1 min-h-0 px-4 pb-3">
+          <EmptyState reviewed={reviewed} onReload={loadAll} />
+        </div>
       </div>
+    );
+  }
+
+  return (
+    <div
+      className="no-scrollbar h-[calc(100dvh-72px)] w-full overflow-y-scroll overscroll-y-contain snap-y snap-mandatory scroll-smooth"
+      style={{ scrollSnapType: "y mandatory", WebkitOverflowScrolling: "touch" }}
+    >
+      {queue.map((card) => {
+        const isFlipped = flippedIds.has(card.id);
+        const isRated = ratedIds.has(card.id);
+        return (
+          <section
+            key={card.id}
+            className="relative flex h-[calc(100dvh-72px)] w-full snap-start snap-always items-stretch justify-center px-3 py-3"
+          >
+            <div className="mx-auto flex h-full w-full max-w-md flex-col">
+              <ReviewCard
+                card={card}
+                flipped={isFlipped}
+                rated={isRated}
+                onFlip={() => flipCard(card.id)}
+                onSpeak={() => speak(card.word)}
+                onFav={() => toggleFav(card.id, !card.is_favorite)}
+                onRate={(r) => rate(card.id, r)}
+                disabled={submittingId === card.id || isRated}
+              />
+            </div>
+          </section>
+        );
+      })}
+
     </div>
   );
 }
+
 
 function StatChip({
   label, value, tone,
@@ -238,16 +268,18 @@ function StatChip({
 }
 
 function ReviewCard({
-  card, flipped, onFlip, onSpeak, onFav, onRate, disabled,
+  card, flipped, rated, onFlip, onSpeak, onFav, onRate, disabled,
 }: {
   card: SrsCard;
   flipped: boolean;
+  rated: boolean;
   onFlip: () => void;
   onSpeak: () => void;
   onFav: () => void;
   onRate: (r: Rating) => void;
   disabled: boolean;
 }) {
+
   return (
     <div className="flex h-full w-full flex-col gap-3">
       <div
@@ -320,7 +352,11 @@ function ReviewCard({
 
       {/* Review actions */}
       <div className="shrink-0">
-        {!flipped ? (
+        {rated ? (
+          <div className="flex items-center justify-center gap-2 rounded-2xl border border-emerald-400/40 bg-emerald-500/10 py-3 text-sm font-semibold text-emerald-300">
+            <CheckCircle2 className="h-4 w-4" /> Baholandi — pastga suring
+          </div>
+        ) : !flipped ? (
           <button
             onClick={onFlip}
             className="w-full rounded-2xl bg-gradient-brand py-3 text-sm font-semibold text-white shadow-glow active:scale-[0.98] transition"
@@ -336,6 +372,7 @@ function ReviewCard({
           </div>
         )}
       </div>
+
     </div>
   );
 }

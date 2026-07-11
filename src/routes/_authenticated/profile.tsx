@@ -80,13 +80,13 @@ function Profile() {
   };
 
   return (
-    <div className="fixed inset-x-0 top-0 bottom-[72px] overflow-hidden">
+    <div className="relative min-h-[100dvh] bg-background pb-[calc(96px+env(safe-area-inset-bottom))]">
       {/* iOS ambient blobs */}
-      <div className="pointer-events-none absolute -top-24 -left-16 h-[320px] w-[320px] rounded-full bg-[oklch(0.85_0.18_85_/_0.18)] blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-24 -right-16 h-[340px] w-[340px] rounded-full bg-[oklch(0.45_0.18_280_/_0.25)] blur-3xl" />
+      <div className="pointer-events-none fixed -top-24 -left-16 h-[320px] w-[320px] rounded-full bg-[oklch(0.85_0.18_85_/_0.18)] blur-3xl" />
+      <div className="pointer-events-none fixed -bottom-24 -right-16 h-[340px] w-[340px] rounded-full bg-[oklch(0.45_0.18_280_/_0.25)] blur-3xl" />
 
-      <div className="relative mx-auto flex h-full max-w-md flex-col px-4 pt-3 pb-3">
-        <div className="flex items-center justify-between">
+      <div className="relative mx-auto flex max-w-md flex-col px-4 pt-4">
+        <div className="flex items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
             <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-gradient-brand text-xl font-bold text-white shadow-glow">
               {(name?.[0] ?? "?").toUpperCase()}
@@ -121,20 +121,28 @@ function Profile() {
                 <div className="h-full bg-[var(--brand-2)] transition-all" style={{ width: `${stats.avg}%` }} />
               </div>
             </div>
-
           </>
         )}
+      </div>
 
-        <button
-          onClick={signOut}
-          className="mt-auto flex w-full items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/[0.06] py-3 text-sm font-semibold backdrop-blur-xl transition hover:bg-white/[0.12]"
-        >
-          <LogOut className="h-4 w-4" /> Chiqish
-        </button>
+      {/* Sticky logout — always visible above bottom nav, respects safe-area */}
+      <div
+        className="fixed inset-x-0 z-40 px-4"
+        style={{ bottom: "calc(72px + env(safe-area-inset-bottom))" }}
+      >
+        <div className="mx-auto max-w-md">
+          <button
+            onClick={signOut}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/[0.08] py-3 text-sm font-semibold text-foreground shadow-glow backdrop-blur-xl transition hover:bg-white/[0.14] active:scale-[0.98]"
+          >
+            <LogOut className="h-4 w-4" /> Chiqish
+          </button>
+        </div>
       </div>
     </div>
   );
 }
+
 
 function Stat({ icon: Icon, label, value }: { icon: typeof BookOpen; label: string; value: number | string }) {
   return (
