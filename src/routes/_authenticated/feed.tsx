@@ -250,71 +250,73 @@ function ReviewCard({
 }) {
   return (
     <div className="flex h-full w-full flex-col gap-3">
-      <button
-        type="button"
+      <div
         onClick={onFlip}
-        className="relative flex flex-1 min-h-0 w-full flex-col overflow-hidden rounded-[2rem] glass-card p-4 text-left text-white animate-float-up active:scale-[0.99] transition-transform"
+        className="relative flex flex-1 min-h-0 w-full flex-col overflow-hidden rounded-[2rem] glass-card text-left text-white animate-float-up cursor-pointer"
       >
         <div className="absolute inset-0 bg-mesh opacity-30 pointer-events-none" />
 
-        <div className="relative flex items-start justify-between">
-          <span className="glass-chip rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--brand-2)]">
-            {card.mastery_level === "mastered" ? "O'zlashtirilgan"
-              : card.mastery_level === "learning" ? "O'rganilyapti" : "Yangi"}
-          </span>
-          <span
-            onClick={(e) => { e.stopPropagation(); onFav(); }}
-            className="grid h-10 w-10 place-items-center rounded-full glass-chip active:scale-90"
-            aria-label="Saqlash"
-          >
-            <Heart className={`h-4 w-4 ${card.is_favorite ? "fill-[var(--brand-2)] text-[var(--brand-2)]" : ""}`} />
-          </span>
-        </div>
-
-        <div className="relative mt-3 flex flex-col items-center text-center shrink-0">
-          <h2 className="text-[clamp(1.6rem,7.5vw,2.6rem)] font-extrabold leading-tight break-words">
-            {card.word}
-          </h2>
-          {card.ipa && (
-            <p className="mt-0.5 font-mono text-[11px] text-white/70">/{card.ipa.replace(/^\/|\/$/g, "")}/</p>
-          )}
-          <span
-            onClick={(e) => { e.stopPropagation(); onSpeak(); }}
-            className="mt-1.5 inline-flex items-center gap-1.5 rounded-full glass-chip px-2.5 py-1 text-[11px] font-semibold text-[var(--brand-2)] active:scale-90"
-          >
-            <Volume2 className="h-3 w-3" /> Talaffuz
-          </span>
-        </div>
-
-        {!flipped ? (
-          <div className="relative mt-auto pt-3 text-center text-[11px] text-white/60">
-            Javobni ko'rish uchun bosing
+        <div className="relative flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 no-scrollbar">
+          <div className="flex items-start justify-between gap-2">
+            <span className="glass-chip rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--brand-2)] shrink-0">
+              {card.mastery_level === "mastered" ? "O'zlashtirilgan"
+                : card.mastery_level === "learning" ? "O'rganilyapti" : "Yangi"}
+            </span>
+            <span
+              onClick={(e) => { e.stopPropagation(); onFav(); }}
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-full glass-chip active:scale-90"
+              aria-label="Saqlash"
+            >
+              <Heart className={`h-4 w-4 ${card.is_favorite ? "fill-[var(--brand-2)] text-[var(--brand-2)]" : ""}`} />
+            </span>
           </div>
-        ) : (
-          <div className="relative mt-3 flex-1 min-h-0 overflow-hidden flex flex-col gap-2 text-[12px]">
-            <div className="rounded-2xl glass-inner p-3 text-center shrink-0">
-              <p className="text-[9px] uppercase tracking-wider text-white/60">O'zbekcha</p>
-              <p className="mt-0.5 text-[clamp(1.1rem,5vw,1.4rem)] font-bold text-[var(--brand-2)] break-words leading-tight">
-                {card.translation_uz ?? "—"}
-              </p>
+
+          <div className="mt-4 flex flex-col items-center text-center">
+            <h2 className="w-full text-[clamp(1.6rem,7vw,2.6rem)] font-extrabold leading-tight break-words hyphens-auto">
+              {card.word}
+            </h2>
+            {card.ipa && (
+              <p className="mt-1 font-mono text-xs text-white/70 break-words px-2">/{card.ipa.replace(/^\/|\/$/g, "")}/</p>
+            )}
+            <span
+              onClick={(e) => { e.stopPropagation(); onSpeak(); }}
+              className="mt-2 inline-flex items-center gap-1.5 rounded-full glass-chip px-3 py-1.5 text-xs font-semibold text-[var(--brand-2)] active:scale-90"
+            >
+              <Volume2 className="h-3.5 w-3.5" /> Talaffuz
+            </span>
+          </div>
+
+          {!flipped ? (
+            <div className="mt-6 pb-1 text-center text-xs text-white/60">
+              Javobni ko'rish uchun bosing
             </div>
-            {card.example && (
-              <div className="rounded-2xl glass-inner p-2.5 shrink">
-                <p className="italic leading-snug line-clamp-2 text-[12px]">"{card.example}"</p>
-                {card.example_uz && (
-                  <p className="mt-0.5 text-white/80 line-clamp-2 text-[11px]">— {card.example_uz}</p>
-                )}
+          ) : (
+            <div className="mt-4 flex flex-col gap-2 text-sm">
+              <div className="rounded-2xl glass-inner p-3 text-center">
+                <p className="text-[10px] uppercase tracking-wider text-white/60">O'zbekcha</p>
+                <p className="mt-1 text-[clamp(1.1rem,5vw,1.4rem)] font-bold text-[var(--brand-2)] break-words leading-snug hyphens-auto">
+                  {card.translation_uz ?? "—"}
+                </p>
               </div>
-            )}
-            {card.explanation && (
-              <div className="flex gap-1.5 rounded-2xl glass-inner p-2.5 shrink min-h-0">
-                <Sparkles className="mt-0.5 h-3 w-3 shrink-0 text-[var(--brand-2)]" />
-                <p className="leading-snug line-clamp-3 text-[12px] text-white/95">{card.explanation}</p>
-              </div>
-            )}
-          </div>
-        )}
-      </button>
+              {card.example && (
+                <div className="rounded-2xl glass-inner p-3">
+                  <p className="italic leading-snug text-[13px] break-words">"{card.example}"</p>
+                  {card.example_uz && (
+                    <p className="mt-1 text-white/80 text-[12px] break-words">— {card.example_uz}</p>
+                  )}
+                </div>
+              )}
+              {card.explanation && (
+                <div className="flex gap-2 rounded-2xl glass-inner p-3">
+                  <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--brand-2)]" />
+                  <p className="leading-snug text-[13px] text-white/95 break-words min-w-0">{card.explanation}</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
 
       {/* Review actions */}
       <div className="shrink-0">
