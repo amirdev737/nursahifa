@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { createHash, timingSafeEqual } from "node:crypto";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
-const WEB_APP_URL = "https://vocabflow-scroll.lovable.app";
+const WEB_APP_URL = "https://nursahifa.lovable.app/auth";
 const GEMINI_MODEL = "gemini-2.5-flash";
 
 const BTN_APP = "🚀 Ilovani ochish";
