@@ -187,38 +187,52 @@ function Feed() {
     );
   }
 
-  return (
-    <div className="mx-auto flex h-[calc(100dvh-72px)] max-w-md flex-col">
-      {header}
-
-      {stats && (
-        <div className="mt-2 grid grid-cols-4 gap-1.5 px-4">
-          <StatChip label="Yangi" value={stats.newCount} tone="brand" />
-          <StatChip label="O'rganilyapti" value={stats.learningCount} tone="warn" />
-          <StatChip label="O'zlashtirildi" value={stats.masteredCount} tone="ok" />
-          <StatChip label="Takror" value={stats.totalReviews} tone="muted" />
-        </div>
-      )}
-
-      <div className="relative mt-3 flex-1 min-h-0 px-4 pb-3">
-        {current ? (
-          <ReviewCard
-            key={current.id}
-            card={current}
-            flipped={flipped}
-            onFlip={() => { vibe(8); setFlipped((f) => !f); }}
-            onSpeak={() => speak(current.word)}
-            onFav={() => toggleFav(current.id, !current.is_favorite)}
-            onRate={rate}
-            disabled={submitting}
-          />
-        ) : (
-          <EmptyState reviewed={reviewed} onReload={loadAll} />
+  if (queue.length === 0) {
+    return (
+      <div className="mx-auto flex h-[calc(100dvh-72px)] max-w-md flex-col">
+        {header}
+        {stats && (
+          <div className="mt-2 grid grid-cols-4 gap-1.5 px-4">
+            <StatChip label="Yangi" value={stats.newCount} tone="brand" />
+            <StatChip label="O'rganilyapti" value={stats.learningCount} tone="warn" />
+            <StatChip label="O'zlashtirildi" value={stats.masteredCount} tone="ok" />
+            <StatChip label="Takror" value={stats.totalReviews} tone="muted" />
+          </div>
         )}
+        <div className="relative mt-3 flex-1 min-h-0 px-4 pb-3">
+          <EmptyState reviewed={reviewed} onReload={loadAll} />
+        </div>
       </div>
+    );
+  }
+
+  return (
+    <div
+      className="no-scrollbar h-[calc(100dvh-72px)] w-full overflow-y-scroll overscroll-y-contain snap-y snap-mandatory scroll-smooth"
+      style={{ scrollSnapType: "y mandatory", WebkitOverflowScrolling: "touch" }}
+    >
+      {queue.map((card) => (
+        <section
+          key={card.id}
+          className="relative flex h-[calc(100dvh-72px)] w-full snap-start snap-always items-stretch justify-center px-3 py-3"
+        >
+          <div className="mx-auto flex h-full w-full max-w-md flex-col">
+            <ReviewCard
+              card={card}
+              flipped={card.id === current?.id ? flipped : false}
+              onFlip={() => { vibe(8); setFlipped((f) => !f); }}
+              onSpeak={() => speak(card.word)}
+              onFav={() => toggleFav(card.id, !card.is_favorite)}
+              onRate={rate}
+              disabled={submitting || card.id !== current?.id}
+            />
+          </div>
+        </section>
+      ))}
     </div>
   );
 }
+
 
 function StatChip({
   label, value, tone,
