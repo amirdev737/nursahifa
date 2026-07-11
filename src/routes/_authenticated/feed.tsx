@@ -352,7 +352,11 @@ function ReviewCard({
 
       {/* Review actions */}
       <div className="shrink-0">
-        {!flipped ? (
+        {rated ? (
+          <div className="flex items-center justify-center gap-2 rounded-2xl border border-emerald-400/40 bg-emerald-500/10 py-3 text-sm font-semibold text-emerald-300">
+            <CheckCircle2 className="h-4 w-4" /> Baholandi — pastga suring
+          </div>
+        ) : !flipped ? (
           <button
             onClick={onFlip}
             className="w-full rounded-2xl bg-gradient-brand py-3 text-sm font-semibold text-white shadow-glow active:scale-[0.98] transition"
@@ -368,6 +372,7 @@ function ReviewCard({
           </div>
         )}
       </div>
+
     </div>
   );
 }
