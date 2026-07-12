@@ -41,6 +41,7 @@ function AddPage() {
   const [reviewWords, setReviewWords] = useState<{ word: string; selected: boolean }[]>([]);
   const [newWord, setNewWord] = useState("");
   const [foundCount, setFoundCount] = useState(0);
+  const [scannerOpen, setScannerOpen] = useState(false);
 
   const cameraRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
@@ -53,11 +54,8 @@ function AddPage() {
     setFoundCount(0);
   };
 
-  const handleImage = async (file: File | undefined) => {
-    if (!file) return;
-    if (file.size > 6_000_000) return toast.error("Rasm 6MB dan kichik bo'lsin");
+  const runOcrPipeline = async (dataUrl: string) => {
     try {
-      const dataUrl = await fileToDataUrl(file);
       setPreview(dataUrl);
       setStage("scanning");
       const res = await ocrExtract({ data: { imageDataUrl: dataUrl } });
@@ -67,9 +65,17 @@ function AddPage() {
       toast.success(`${res.words.length} ta so'z topildi!`);
       setTimeout(() => setStage("review"), 900);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Rasmni o'qib bo'lmadi");
+      const msg = err instanceof Error ? err.message : "";
+      toast.error(msg || "Rasmni skanerlab bo'lmadi. Qayta urinib ko'ring.");
       resetOcr();
     }
+  };
+
+  const handleImage = async (file: File | undefined) => {
+    if (!file) return;
+    if (file.size > 6_000_000) return toast.error("Rasm 6MB dan kichik bo'lsin");
+    const dataUrl = await fileToDataUrl(file);
+    await runOcrPipeline(dataUrl);
   };
 
   const toggleWord = (i: number) =>
