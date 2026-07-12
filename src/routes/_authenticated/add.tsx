@@ -196,18 +196,29 @@ function AddPage() {
 
       <div className="mt-3 grid grid-cols-2 gap-2 shrink-0">
         <button
-          type="button" onClick={() => cameraRef.current?.click()}
-          className="flex items-center justify-center gap-2 rounded-2xl border border-[var(--brand-2)]/40 bg-[var(--brand-2)]/10 px-3 py-2.5 text-xs font-semibold text-[var(--brand-2)] active:scale-95 transition"
+          type="button" onClick={() => setScannerOpen(true)}
+          className="ios-pressable flex items-center justify-center gap-2 rounded-2xl border border-[var(--brand-2)]/40 bg-[var(--brand-2)]/10 px-3 py-2.5 text-xs font-semibold text-[var(--brand-2)]"
         >
-          <Camera className="h-4 w-4" /> Rasmga olish
+          <Camera className="h-4 w-4" /> Kamera bilan skanlash
         </button>
         <button
           type="button" onClick={() => galleryRef.current?.click()}
-          className="flex items-center justify-center gap-2 rounded-2xl border border-border bg-card px-3 py-2.5 text-xs font-semibold active:scale-95 transition"
+          className="ios-pressable flex items-center justify-center gap-2 rounded-2xl border border-border bg-card px-3 py-2.5 text-xs font-semibold"
         >
           <ImagePlus className="h-4 w-4" /> Rasm yuklash
         </button>
       </div>
+
+      <CameraScanner
+        open={scannerOpen}
+        onClose={() => setScannerOpen(false)}
+        onCapture={async (dataUrl) => {
+          setScannerOpen(false);
+          await runOcrPipeline(dataUrl);
+        }}
+        onFallbackUpload={() => { setScannerOpen(false); galleryRef.current?.click(); }}
+      />
+
 
       <form onSubmit={submit} className="mt-3 flex flex-1 min-h-0 flex-col gap-2">
         <div className="flex-1 min-h-0 rounded-3xl border border-border bg-card p-2 shadow-soft">
