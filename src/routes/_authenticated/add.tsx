@@ -105,7 +105,14 @@ function AddPage() {
       setStage("generating");
       const res = await ocrGenerate({ data: { words: selected } });
       setStage("done");
-      toast.success(`${res.inserted} ta kartochka yaratildi`);
+      if (res.inserted > 0) {
+        toast.success(
+          `${res.inserted} ta kartochka yaratildi` +
+          (res.skipped ? ` · ${res.skipped} ta takror o'tkazib yuborildi` : "")
+        );
+      } else {
+        toast.info("Bu so'zlar allaqachon ro'yxatingizda bor");
+      }
       setTimeout(() => {
         resetOcr();
         navigate({ to: "/feed" });
