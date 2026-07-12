@@ -174,6 +174,14 @@ export const generateFromWordList = createServerFn({ method: "POST" })
 
     if (items.length === 0) throw new Error("AI hech qanday natija qaytarmadi");
 
+    // Dedupe against words the user already has
+    const { data: existing } = await supabase
+      .from("words")
+      .select("word")
+      .eq("user_id", userId)
+      .in("word", items.map((r) => String(r.word).trim().toLowerCase()));
+    const existingSet = new Set((existing ?? []).map((r: any) => String(r.word).toLowerCase()));
+
     const rows = items.slice(0, 40).map((r) => ({
       user_id: userId,
       word: String(r.word).trim().toLowerCase(),
@@ -185,10 +193,14 @@ export const generateFromWordList = createServerFn({ method: "POST" })
       synonyms: [] as string[],
       antonyms: [] as string[],
       status: "ready",
-    }));
+    })).filter((r) => !existingSet.has(r.word));
+
+    if (rows.length === 0) {
+      return { inserted: 0, words: [], skipped: items.length };
+    }
 
     const { error } = await supabase.from("words").insert(rows);
     if (error) throw new Error(error.message);
 
-    return { inserted: rows.length, words: rows.map((r) => r.word) };
+    return { inserted: rows.length, words: rows.map((r) => r.word), skipped: items.length - rows.length };
   });

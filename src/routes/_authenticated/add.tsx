@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { generateWordData } from "@/lib/ai.functions";
 import { extractWordsFromImageOCR, generateFromWordList } from "@/lib/ocr.functions";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { CameraScanner } from "@/components/CameraScanner";
 import { toast } from "sonner";
 import {
   Loader2, Sparkles, ArrowRight, Camera, ImagePlus, X, FileText,
@@ -40,6 +41,7 @@ function AddPage() {
   const [reviewWords, setReviewWords] = useState<{ word: string; selected: boolean }[]>([]);
   const [newWord, setNewWord] = useState("");
   const [foundCount, setFoundCount] = useState(0);
+  const [scannerOpen, setScannerOpen] = useState(false);
 
   const cameraRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
@@ -52,11 +54,8 @@ function AddPage() {
     setFoundCount(0);
   };
 
-  const handleImage = async (file: File | undefined) => {
-    if (!file) return;
-    if (file.size > 6_000_000) return toast.error("Rasm 6MB dan kichik bo'lsin");
+  const runOcrPipeline = async (dataUrl: string) => {
     try {
-      const dataUrl = await fileToDataUrl(file);
       setPreview(dataUrl);
       setStage("scanning");
       const res = await ocrExtract({ data: { imageDataUrl: dataUrl } });
@@ -66,9 +65,17 @@ function AddPage() {
       toast.success(`${res.words.length} ta so'z topildi!`);
       setTimeout(() => setStage("review"), 900);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Rasmni o'qib bo'lmadi");
+      const msg = err instanceof Error ? err.message : "";
+      toast.error(msg || "Rasmni skanerlab bo'lmadi. Qayta urinib ko'ring.");
       resetOcr();
     }
+  };
+
+  const handleImage = async (file: File | undefined) => {
+    if (!file) return;
+    if (file.size > 6_000_000) return toast.error("Rasm 6MB dan kichik bo'lsin");
+    const dataUrl = await fileToDataUrl(file);
+    await runOcrPipeline(dataUrl);
   };
 
   const toggleWord = (i: number) =>
@@ -98,7 +105,14 @@ function AddPage() {
       setStage("generating");
       const res = await ocrGenerate({ data: { words: selected } });
       setStage("done");
-      toast.success(`${res.inserted} ta kartochka yaratildi`);
+      if (res.inserted > 0) {
+        toast.success(
+          `${res.inserted} ta kartochka yaratildi` +
+          (res.skipped ? ` · ${res.skipped} ta takror o'tkazib yuborildi` : "")
+        );
+      } else {
+        toast.info("Bu so'zlar allaqachon ro'yxatingizda bor");
+      }
       setTimeout(() => {
         resetOcr();
         navigate({ to: "/feed" });
@@ -182,18 +196,29 @@ function AddPage() {
 
       <div className="mt-3 grid grid-cols-2 gap-2 shrink-0">
         <button
-          type="button" onClick={() => cameraRef.current?.click()}
-          className="flex items-center justify-center gap-2 rounded-2xl border border-[var(--brand-2)]/40 bg-[var(--brand-2)]/10 px-3 py-2.5 text-xs font-semibold text-[var(--brand-2)] active:scale-95 transition"
+          type="button" onClick={() => setScannerOpen(true)}
+          className="ios-pressable flex items-center justify-center gap-2 rounded-2xl border border-[var(--brand-2)]/40 bg-[var(--brand-2)]/10 px-3 py-2.5 text-xs font-semibold text-[var(--brand-2)]"
         >
-          <Camera className="h-4 w-4" /> Rasmga olish
+          <Camera className="h-4 w-4" /> Kamera bilan skanlash
         </button>
         <button
           type="button" onClick={() => galleryRef.current?.click()}
-          className="flex items-center justify-center gap-2 rounded-2xl border border-border bg-card px-3 py-2.5 text-xs font-semibold active:scale-95 transition"
+          className="ios-pressable flex items-center justify-center gap-2 rounded-2xl border border-border bg-card px-3 py-2.5 text-xs font-semibold"
         >
           <ImagePlus className="h-4 w-4" /> Rasm yuklash
         </button>
       </div>
+
+      <CameraScanner
+        open={scannerOpen}
+        onClose={() => setScannerOpen(false)}
+        onCapture={async (dataUrl) => {
+          setScannerOpen(false);
+          await runOcrPipeline(dataUrl);
+        }}
+        onFallbackUpload={() => { setScannerOpen(false); galleryRef.current?.click(); }}
+      />
+
 
       <form onSubmit={submit} className="mt-3 flex flex-1 min-h-0 flex-col gap-2">
         <div className="flex-1 min-h-0 rounded-3xl border border-border bg-card p-2 shadow-soft">
