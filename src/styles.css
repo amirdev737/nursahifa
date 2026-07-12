@@ -5,8 +5,9 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-display: "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
-  --font-sans: "Inter", system-ui, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", system-ui, sans-serif;
+
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -214,3 +215,19 @@
 @utility animate-gold-pulse { animation: gold-pulse 2.4s ease-in-out infinite; }
 @utility animate-spin-slow { animation: spin-slow 1.6s linear infinite; }
 @utility animate-particles-burst { animation: particles-burst 1s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* iOS-style press feedback — spring-like */
+@utility ios-pressable {
+  transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1), opacity 180ms ease;
+  &:active { transform: scale(0.96); opacity: 0.88; }
+}
+@utility ios-hairline {
+  border-color: color-mix(in oklab, var(--foreground) 12%, transparent);
+}
+@keyframes shutter-flash {
+  0% { opacity: 0; }
+  20% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@utility animate-shutter { animation: shutter-flash 0.5s ease-out both; }
+

@@ -110,6 +110,26 @@ function RootComponent() {
     return () => subscription.unsubscribe();
   }, [router, queryClient]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    let toastId: string | number | undefined;
+    const onOffline = async () => {
+      const { toast } = await import("sonner");
+      toastId = toast.error("Internet aloqasi yo'q. Ulanishni tekshiring.", { duration: Infinity });
+    };
+    const onOnline = async () => {
+      const { toast } = await import("sonner");
+      if (toastId !== undefined) toast.dismiss(toastId);
+      toast.success("Internet tiklandi");
+    };
+    window.addEventListener("offline", onOffline);
+    window.addEventListener("online", onOnline);
+    return () => {
+      window.removeEventListener("offline", onOffline);
+      window.removeEventListener("online", onOnline);
+    };
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <TelegramAutoAuth />
