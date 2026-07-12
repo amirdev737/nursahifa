@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { generateWordData } from "@/lib/ai.functions";
 import { extractWordsFromImageOCR, generateFromWordList } from "@/lib/ocr.functions";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { CameraScanner } from "@/components/CameraScanner";
 import { toast } from "sonner";
 import {
   Loader2, Sparkles, ArrowRight, Camera, ImagePlus, X, FileText,
