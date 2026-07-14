@@ -1,8 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { AnimatedCounter, ProgressRing } from "@/components/AnimatedCounter";
+import { RemindersSettings } from "@/components/RemindersSettings";
+import { usePullToRefresh } from "@/hooks/usePullToRefresh";
+import { haptics } from "@/lib/haptics";
 import {
   LogOut, BookOpen, Heart, Trophy, Loader2, Flame, Clock, TrendingUp,
   Sparkles, Target, CalendarDays,
