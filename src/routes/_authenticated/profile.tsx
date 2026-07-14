@@ -227,6 +227,8 @@ function Profile() {
               <Stat icon={Trophy} label="Testlar" value={stats.quizzes} />
               <Stat icon={Target} label="Eng yaxshi ball" value={`${stats.bestScore}%`} />
             </div>
+
+            {userId && <RemindersSettings userId={userId} />}
           </>
         )}
       </div>
