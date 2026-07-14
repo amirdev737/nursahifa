@@ -1,6 +1,7 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { BottomNav } from "@/components/BottomNav";
+import { PageTransition } from "@/components/PageTransition";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -11,8 +12,11 @@ export const Route = createFileRoute("/_authenticated")({
   },
   component: () => (
     <div className="min-h-[100dvh] bg-background">
-      <Outlet />
+      <PageTransition>
+        <Outlet />
+      </PageTransition>
       <BottomNav />
     </div>
   ),
 });
+
