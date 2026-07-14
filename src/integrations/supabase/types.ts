@@ -133,6 +133,39 @@ export type Database = {
         }
         Relationships: []
       }
+      user_streaks: {
+        Row: {
+          current_streak: number
+          last_review_date: string | null
+          longest_streak: number
+          today_date: string | null
+          today_seconds: number
+          total_seconds: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          current_streak?: number
+          last_review_date?: string | null
+          longest_streak?: number
+          today_date?: string | null
+          today_seconds?: number
+          total_seconds?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          current_streak?: number
+          last_review_date?: string | null
+          longest_streak?: number
+          today_date?: string | null
+          today_seconds?: number
+          total_seconds?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       words: {
         Row: {
           antonyms: string[] | null
@@ -201,7 +234,25 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      record_review_day: {
+        Args: { _seconds?: number }
+        Returns: {
+          current_streak: number
+          last_review_date: string | null
+          longest_streak: number
+          today_date: string | null
+          today_seconds: number
+          total_seconds: number
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "user_streaks"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
     }
     Enums: {
       [_ in never]: never
