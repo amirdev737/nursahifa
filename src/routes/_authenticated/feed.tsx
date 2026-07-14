@@ -52,7 +52,6 @@ function Feed() {
   const [ratedIds, setRatedIds] = useState<Set<string>>(new Set());
   const [reviewed, setReviewed] = useState(0);
   const [submittingId, setSubmittingId] = useState<string | null>(null);
-  const lastTickRef = (typeof window !== "undefined") ? (window as any) : null;
   const [lastTick, setLastTick] = useState<number>(() => Date.now());
 
   const loadAll = useCallback(async () => {
