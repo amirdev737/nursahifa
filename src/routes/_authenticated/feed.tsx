@@ -167,7 +167,7 @@ function Feed() {
       dueToday: Math.max(0, s.dueToday - 1),
     } : s);
     setSubmittingId(null);
-  }, [queue, userId, submittingId, ratedIds]);
+  }, [queue, userId, submittingId, ratedIds, lastTick]);
 
   const flipCard = useCallback((id: string) => {
     vibe(8);
