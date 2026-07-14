@@ -158,6 +158,37 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
 
           // === Commands & menu buttons ===
           if (cmd === "/start") {
+            // Deep-link: /start link_<token> → link this chat to a NurSahifa user
+            const payload = text.split(/\s+/).slice(1).join(" ").trim();
+            if (payload.startsWith("link_")) {
+              const linkToken = payload.slice(5);
+              const { data: tok } = await supabaseAdmin
+                .from("telegram_link_tokens")
+                .select("user_id,expires_at,consumed_at")
+                .eq("token", linkToken)
+                .maybeSingle();
+              if (!tok || tok.consumed_at || new Date(tok.expires_at) < new Date()) {
+                await tg(token, "sendMessage", {
+                  chat_id: chatId,
+                  text: "❌ Bog'lash havolasi eskirgan. Ilovada qaytadan tugmani bosing.",
+                });
+              } else {
+                await supabaseAdmin.from("user_settings").upsert({
+                  user_id: tok.user_id,
+                  telegram_chat_id: chatId,
+                  updated_at: new Date().toISOString(),
+                }, { onConflict: "user_id" });
+                await supabaseAdmin.from("telegram_link_tokens")
+                  .update({ consumed_at: new Date().toISOString() })
+                  .eq("token", linkToken);
+                await tg(token, "sendMessage", {
+                  chat_id: chatId,
+                  text: "✅ Muvaffaqiyatli bog'landi! Endi kunlik eslatmalarni shu yerga yuboraman.",
+                  reply_markup: replyKeyboard(),
+                });
+              }
+              return Response.json({ ok: true });
+            }
             await setMode(chatId, "idle");
             await tg(token, "sendMessage", {
               chat_id: chatId,

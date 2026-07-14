@@ -115,6 +115,30 @@ export type Database = {
         }
         Relationships: []
       }
+      telegram_link_tokens: {
+        Row: {
+          consumed_at: string | null
+          created_at: string
+          expires_at: string
+          token: string
+          user_id: string
+        }
+        Insert: {
+          consumed_at?: string | null
+          created_at?: string
+          expires_at?: string
+          token: string
+          user_id: string
+        }
+        Update: {
+          consumed_at?: string | null
+          created_at?: string
+          expires_at?: string
+          token?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       telegram_user_modes: {
         Row: {
           chat_id: number
@@ -130,6 +154,42 @@ export type Database = {
           chat_id?: number
           mode?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      user_settings: {
+        Row: {
+          last_reminded_on: string | null
+          reminder_hour: number
+          reminder_minute: number
+          reminders_enabled: boolean
+          telegram_chat_id: number | null
+          tz_offset_minutes: number
+          updated_at: string
+          user_id: string
+          web_push_subscription: Json | null
+        }
+        Insert: {
+          last_reminded_on?: string | null
+          reminder_hour?: number
+          reminder_minute?: number
+          reminders_enabled?: boolean
+          telegram_chat_id?: number | null
+          tz_offset_minutes?: number
+          updated_at?: string
+          user_id: string
+          web_push_subscription?: Json | null
+        }
+        Update: {
+          last_reminded_on?: string | null
+          reminder_hour?: number
+          reminder_minute?: number
+          reminders_enabled?: boolean
+          telegram_chat_id?: number | null
+          tz_offset_minutes?: number
+          updated_at?: string
+          user_id?: string
+          web_push_subscription?: Json | null
         }
         Relationships: []
       }
