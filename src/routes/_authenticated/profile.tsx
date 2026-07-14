@@ -46,78 +46,83 @@ function formatDuration(sec: number) {
 
 function Profile() {
   const navigate = useNavigate();
+  const [userId, setUserId] = useState<string | null>(null);
   const [name, setName] = useState<string>("");
   const [email, setEmail] = useState<string>("");
   const [stats, setStats] = useState<Stats | null>(null);
 
-  useEffect(() => {
-    (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      setEmail(user.email ?? "");
-      const { data: prof } = await supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle();
-      setName(prof?.display_name ?? user.email?.split("@")[0] ?? "O'quvchi");
+  const loadAll = useCallback(async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    setUserId(user.id);
+    setEmail(user.email ?? "");
+    const { data: prof } = await supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle();
+    setName(prof?.display_name ?? user.email?.split("@")[0] ?? "O'quvchi");
 
-      const now = new Date();
-      const endOfDay = new Date(now); endOfDay.setHours(23, 59, 59, 999);
-      const startOfDay = new Date(now); startOfDay.setHours(0, 0, 0, 0);
-      const startOfWeek = new Date(now); startOfWeek.setDate(now.getDate() - 6); startOfWeek.setHours(0, 0, 0, 0);
+    const now = new Date();
+    const endOfDay = new Date(now); endOfDay.setHours(23, 59, 59, 999);
+    const startOfDay = new Date(now); startOfDay.setHours(0, 0, 0, 0);
+    const startOfWeek = new Date(now); startOfWeek.setDate(now.getDate() - 6); startOfWeek.setHours(0, 0, 0, 0);
 
-      const [
-        { count: totalWords },
-        { count: favorites },
-        { data: quizzes },
-        { data: mastery },
-        { count: dueToday },
-        { count: totalReviews },
-        { count: reviewsToday },
-        { count: createdThisWeek },
-        streakRes,
-      ] = await Promise.all([
-        supabase.from("words").select("*", { count: "exact", head: true }).eq("user_id", user.id),
-        supabase.from("words").select("*", { count: "exact", head: true }).eq("user_id", user.id).eq("is_favorite", true),
-        supabase.from("quiz_results").select("score,total").eq("user_id", user.id),
-        supabase.from("words").select("mastery_level").eq("user_id", user.id).eq("status", "ready"),
-        supabase.from("words").select("*", { count: "exact", head: true })
-          .eq("user_id", user.id).eq("status", "ready").lte("next_review_at", endOfDay.toISOString()),
-        supabase.from("review_history").select("*", { count: "exact", head: true }).eq("user_id", user.id),
-        supabase.from("review_history").select("*", { count: "exact", head: true })
-          .eq("user_id", user.id).gte("reviewed_at", startOfDay.toISOString()),
-        supabase.from("words").select("*", { count: "exact", head: true })
-          .eq("user_id", user.id).gte("created_at", startOfWeek.toISOString()),
-        supabase.from("user_streaks" as any).select("current_streak,longest_streak,today_seconds,total_seconds,today_date").eq("user_id", user.id).maybeSingle(),
-      ]);
+    const [
+      { count: totalWords },
+      { count: favorites },
+      { data: quizzes },
+      { data: mastery },
+      { count: dueToday },
+      { count: totalReviews },
+      { count: reviewsToday },
+      { count: createdThisWeek },
+      streakRes,
+    ] = await Promise.all([
+      supabase.from("words").select("*", { count: "exact", head: true }).eq("user_id", user.id),
+      supabase.from("words").select("*", { count: "exact", head: true }).eq("user_id", user.id).eq("is_favorite", true),
+      supabase.from("quiz_results").select("score,total").eq("user_id", user.id),
+      supabase.from("words").select("mastery_level").eq("user_id", user.id).eq("status", "ready"),
+      supabase.from("words").select("*", { count: "exact", head: true })
+        .eq("user_id", user.id).eq("status", "ready").lte("next_review_at", endOfDay.toISOString()),
+      supabase.from("review_history").select("*", { count: "exact", head: true }).eq("user_id", user.id),
+      supabase.from("review_history").select("*", { count: "exact", head: true })
+        .eq("user_id", user.id).gte("reviewed_at", startOfDay.toISOString()),
+      supabase.from("words").select("*", { count: "exact", head: true })
+        .eq("user_id", user.id).gte("created_at", startOfWeek.toISOString()),
+      supabase.from("user_streaks" as any).select("current_streak,longest_streak,today_seconds,total_seconds,today_date").eq("user_id", user.id).maybeSingle(),
+    ]);
 
-      const qs = quizzes ?? [];
-      const avg = qs.length ? Math.round((qs.reduce((s, q) => s + q.score / q.total, 0) / qs.length) * 100) : 0;
-      const bestScore = qs.length ? Math.max(...qs.map((q) => Math.round((q.score / q.total) * 100))) : 0;
-      const rows = (mastery ?? []) as { mastery_level: string }[];
-      const streak = (streakRes.data as any) ?? {};
-      const todayStr = startOfDay.toISOString().slice(0, 10);
-      const todaySeconds = streak.today_date === todayStr ? (streak.today_seconds ?? 0) : 0;
+    const qs = quizzes ?? [];
+    const avg = qs.length ? Math.round((qs.reduce((s, q) => s + q.score / q.total, 0) / qs.length) * 100) : 0;
+    const bestScore = qs.length ? Math.max(...qs.map((q) => Math.round((q.score / q.total) * 100))) : 0;
+    const rows = (mastery ?? []) as { mastery_level: string }[];
+    const streak = (streakRes.data as any) ?? {};
+    const todayStr = startOfDay.toISOString().slice(0, 10);
+    const todaySeconds = streak.today_date === todayStr ? (streak.today_seconds ?? 0) : 0;
 
-      setStats({
-        totalWords: totalWords ?? 0,
-        favorites: favorites ?? 0,
-        quizzes: qs.length,
-        avg,
-        bestScore,
-        dueToday: dueToday ?? 0,
-        newCount: rows.filter((r) => r.mastery_level === "new").length,
-        learningCount: rows.filter((r) => r.mastery_level === "learning").length,
-        masteredCount: rows.filter((r) => r.mastery_level === "mastered").length,
-        totalReviews: totalReviews ?? 0,
-        reviewsToday: reviewsToday ?? 0,
-        createdThisWeek: createdThisWeek ?? 0,
-        currentStreak: streak.current_streak ?? 0,
-        longestStreak: streak.longest_streak ?? 0,
-        todaySeconds,
-        totalSeconds: streak.total_seconds ?? 0,
-      });
-    })();
+    setStats({
+      totalWords: totalWords ?? 0,
+      favorites: favorites ?? 0,
+      quizzes: qs.length,
+      avg,
+      bestScore,
+      dueToday: dueToday ?? 0,
+      newCount: rows.filter((r) => r.mastery_level === "new").length,
+      learningCount: rows.filter((r) => r.mastery_level === "learning").length,
+      masteredCount: rows.filter((r) => r.mastery_level === "mastered").length,
+      totalReviews: totalReviews ?? 0,
+      reviewsToday: reviewsToday ?? 0,
+      createdThisWeek: createdThisWeek ?? 0,
+      currentStreak: streak.current_streak ?? 0,
+      longestStreak: streak.longest_streak ?? 0,
+      todaySeconds,
+      totalSeconds: streak.total_seconds ?? 0,
+    });
   }, []);
 
+  useEffect(() => { loadAll(); }, [loadAll]);
+
+  const { ref: scrollRef, Indicator } = usePullToRefresh({ onRefresh: loadAll });
+
   const signOut = async () => {
+    haptics.medium();
     await supabase.auth.signOut();
     navigate({ to: "/" });
   };
