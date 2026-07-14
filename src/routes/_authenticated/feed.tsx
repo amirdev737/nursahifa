@@ -52,6 +52,7 @@ function Feed() {
   const [ratedIds, setRatedIds] = useState<Set<string>>(new Set());
   const [reviewed, setReviewed] = useState(0);
   const [submittingId, setSubmittingId] = useState<string | null>(null);
+  const [lastTick, setLastTick] = useState<number>(() => Date.now());
 
   const loadAll = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -141,6 +142,14 @@ function Feed() {
     if (uErr) toast.error("Saqlab bo'lmadi. Qayta urinib ko'ring.");
     if (hErr) toast.error("Saqlab bo'lmadi. Qayta urinib ko'ring.");
 
+    // Record streak + learning time (capped so tab-away doesn't inflate)
+    const now = Date.now();
+    const deltaSec = Math.min(120, Math.max(1, Math.round((now - lastTick) / 1000)));
+    setLastTick(now);
+    supabase.rpc("record_review_day" as any, { _seconds: deltaSec }).then(({ error }) => {
+      if (error) console.warn("streak update failed", error.message);
+    });
+
     setStats((s) => s ? {
       ...s,
       totalReviews: s.totalReviews + 1,
@@ -158,7 +167,7 @@ function Feed() {
       dueToday: Math.max(0, s.dueToday - 1),
     } : s);
     setSubmittingId(null);
-  }, [queue, userId, submittingId, ratedIds]);
+  }, [queue, userId, submittingId, ratedIds, lastTick]);
 
   const flipCard = useCallback((id: string) => {
     vibe(8);
