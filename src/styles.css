@@ -231,3 +231,10 @@
 }
 @utility animate-shutter { animation: shutter-flash 0.5s ease-out both; }
 
+@keyframes pulse-slow {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.08); opacity: 0.9; }
+}
+@utility animate-pulse-slow { animation: pulse-slow 2.2s ease-in-out infinite; }
+
+
