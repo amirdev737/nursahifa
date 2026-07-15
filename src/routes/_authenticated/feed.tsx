@@ -238,36 +238,58 @@ function Feed() {
     );
   }
 
-  return (
-    <div
-      className="no-scrollbar h-[calc(100dvh-72px)] w-full overflow-y-scroll overscroll-y-contain snap-y snap-mandatory scroll-smooth"
-      style={{ scrollSnapType: "y mandatory", WebkitOverflowScrolling: "touch" }}
-    >
-      {queue.map((card) => {
-        const isFlipped = flippedIds.has(card.id);
-        const isRated = ratedIds.has(card.id);
-        return (
-          <section
-            key={card.id}
-            className="relative flex h-[calc(100dvh-72px)] w-full snap-start snap-always items-stretch justify-center px-3 py-3"
-          >
-            <div className="mx-auto flex h-full w-full max-w-md flex-col">
-              <ReviewCard
-                card={card}
-                flipped={isFlipped}
-                rated={isRated}
-                onFlip={() => flipCard(card.id)}
-                onSpeak={() => speak(card.word)}
-                onFav={() => toggleFav(card.id, !card.is_favorite)}
-                onRate={(r) => rate(card.id, r)}
-                disabled={submittingId === card.id || isRated}
-              />
-            </div>
-          </section>
-        );
-      })}
+  const distractorPool: QuizPool[] = useMemo(
+    () => (queue ?? []).map((c) => ({ id: c.id, word: c.word, translation_uz: c.translation_uz })),
+    [queue],
+  );
 
-    </div>
+  return (
+    <>
+      <div
+        className="no-scrollbar h-[calc(100dvh-72px)] w-full overflow-y-scroll overscroll-y-contain snap-y snap-mandatory scroll-smooth"
+        style={{
+          scrollSnapType: "y mandatory",
+          WebkitOverflowScrolling: "touch",
+          touchAction: quizOpen ? "none" : "pan-y",
+          overflow: quizOpen ? "hidden" : undefined,
+        }}
+      >
+        {queue.map((card) => {
+          const isFlipped = flippedIds.has(card.id);
+          const isRated = ratedIds.has(card.id);
+          return (
+            <section
+              key={card.id}
+              className="relative flex h-[calc(100dvh-72px)] w-full snap-start snap-always items-stretch justify-center px-3 py-3"
+            >
+              <div className="mx-auto flex h-full w-full max-w-md flex-col">
+                <ReviewCard
+                  card={card}
+                  flipped={isFlipped}
+                  rated={isRated}
+                  onFlip={() => flipCard(card.id)}
+                  onSpeak={() => speak(card.word)}
+                  onFav={() => toggleFav(card.id, !card.is_favorite)}
+                  onRate={(r) => rate(card.id, r)}
+                  disabled={submittingId === card.id || isRated}
+                />
+              </div>
+            </section>
+          );
+        })}
+      </div>
+
+      {quizOpen && recentBatch.length > 0 && (
+        <QuizGate
+          pool={recentBatch.slice(-5)}
+          distractorPool={distractorPool}
+          onPass={() => {
+            setQuizOpen(false);
+            setRecentBatch([]);
+          }}
+        />
+      )}
+    </>
   );
 }
 
