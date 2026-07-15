@@ -128,12 +128,12 @@ function Profile() {
   };
 
   return (
-    <div ref={scrollRef} className="relative h-[100dvh] overflow-y-auto overscroll-contain bg-background pb-[calc(96px+env(safe-area-inset-bottom))]">
+    <div ref={scrollRef} className="relative h-[100dvh] w-full overflow-x-hidden overflow-y-auto overscroll-contain bg-background pb-[calc(96px+env(safe-area-inset-bottom))]">
       {Indicator}
       <div className="pointer-events-none fixed -top-24 -left-16 h-[320px] w-[320px] rounded-full bg-[oklch(0.85_0.18_85_/_0.18)] blur-3xl" />
       <div className="pointer-events-none fixed -bottom-24 -right-16 h-[340px] w-[340px] rounded-full bg-[oklch(0.45_0.18_280_/_0.25)] blur-3xl" />
 
-      <div className="relative mx-auto flex max-w-md flex-col px-4 pt-4">
+      <div className="relative mx-auto flex w-full max-w-md flex-col px-4 pt-4 sm:max-w-xl md:max-w-2xl lg:max-w-3xl sm:px-6">
         <div className="flex items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
             <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-gradient-brand text-xl font-bold text-white shadow-glow">
@@ -175,7 +175,7 @@ function Profile() {
             </div>
 
             {/* Accuracy + Reviews today (dual rings) */}
-            <div className="mt-3 grid grid-cols-2 gap-2.5">
+            <div className="mt-3 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
               <RingCard
                 label="Aniqlik"
                 value={stats.avg}
@@ -192,19 +192,15 @@ function Profile() {
                 color="var(--brand-2)"
                 icon={CalendarDays}
               />
-            </div>
-
-            {/* Learning time */}
-            <div className="mt-3 grid grid-cols-2 gap-2.5">
               <TimeCard icon={Clock} label="Bugun o'qildi" seconds={stats.todaySeconds} />
               <TimeCard icon={Sparkles} label="Umumiy vaqt" seconds={stats.totalSeconds} />
             </div>
 
             {/* Mastery breakdown */}
             <div className="mt-3 rounded-3xl border border-white/15 bg-white/[0.06] p-4 backdrop-blur-xl">
-              <div className="mb-3 flex items-center justify-between">
-                <p className="text-sm font-semibold">O'zlashtirish darajasi</p>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <p className="truncate text-sm font-semibold">O'zlashtirish darajasi</p>
+                <TrendingUp className="h-4 w-4 shrink-0 text-muted-foreground" />
               </div>
               <MasteryBar
                 newCount={stats.newCount}
@@ -219,7 +215,7 @@ function Profile() {
             </div>
 
             {/* Grid stats */}
-            <div className="mt-3 grid grid-cols-2 gap-2.5">
+            <div className="mt-3 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
               <Stat icon={BookOpen} label="Jami so'zlar" value={stats.totalWords} />
               <Stat icon={Heart} label="Saqlangan" value={stats.favorites} />
               <Stat icon={Trophy} label="Jami takrorlar" value={stats.totalReviews} />
@@ -233,11 +229,12 @@ function Profile() {
         )}
       </div>
 
+
       <div
         className="fixed inset-x-0 z-40 px-4"
         style={{ bottom: "calc(72px + env(safe-area-inset-bottom))" }}
       >
-        <div className="mx-auto max-w-md">
+        <div className="mx-auto max-w-md sm:max-w-xl md:max-w-2xl lg:max-w-3xl sm:px-2">
           <button
             onClick={signOut}
             className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/[0.08] py-3 text-sm font-semibold text-foreground shadow-glow backdrop-blur-xl transition hover:bg-white/[0.14] active:scale-[0.98]"

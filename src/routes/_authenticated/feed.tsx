@@ -8,9 +8,10 @@ import {
 } from "lucide-react";
 import type { WordCard } from "@/components/Flashcard";
 import {
-  type Rating, RATING_LABEL_UZ, RATING_INTERVAL_LABEL_UZ,
+  type Rating, RATING_LABEL_UZ,
   computeNextReview, nextMasteryLevel,
 } from "@/lib/srs";
+import { QuizGate, type QuizPool } from "@/components/QuizGate";
 
 export const Route = createFileRoute("/_authenticated/feed")({
   head: () => ({ meta: [{ title: "Bugungi darsim — VocabFlow" }] }),
@@ -53,6 +54,8 @@ function Feed() {
   const [reviewed, setReviewed] = useState(0);
   const [submittingId, setSubmittingId] = useState<string | null>(null);
   const [lastTick, setLastTick] = useState<number>(() => Date.now());
+  const [recentBatch, setRecentBatch] = useState<QuizPool[]>([]);
+  const [quizOpen, setQuizOpen] = useState(false);
 
   const loadAll = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -166,6 +169,16 @@ function Feed() {
           : s.masteredCount,
       dueToday: Math.max(0, s.dueToday - 1),
     } : s);
+
+    // Track batch of last 5 for quiz gate
+    setRecentBatch((prev) => {
+      const next = [...prev, { id: card.id, word: card.word, translation_uz: card.translation_uz }];
+      if (next.length >= 5) {
+        setQuizOpen(true);
+      }
+      return next;
+    });
+
     setSubmittingId(null);
   }, [queue, userId, submittingId, ratedIds, lastTick]);
 
@@ -225,36 +238,58 @@ function Feed() {
     );
   }
 
-  return (
-    <div
-      className="no-scrollbar h-[calc(100dvh-72px)] w-full overflow-y-scroll overscroll-y-contain snap-y snap-mandatory scroll-smooth"
-      style={{ scrollSnapType: "y mandatory", WebkitOverflowScrolling: "touch" }}
-    >
-      {queue.map((card) => {
-        const isFlipped = flippedIds.has(card.id);
-        const isRated = ratedIds.has(card.id);
-        return (
-          <section
-            key={card.id}
-            className="relative flex h-[calc(100dvh-72px)] w-full snap-start snap-always items-stretch justify-center px-3 py-3"
-          >
-            <div className="mx-auto flex h-full w-full max-w-md flex-col">
-              <ReviewCard
-                card={card}
-                flipped={isFlipped}
-                rated={isRated}
-                onFlip={() => flipCard(card.id)}
-                onSpeak={() => speak(card.word)}
-                onFav={() => toggleFav(card.id, !card.is_favorite)}
-                onRate={(r) => rate(card.id, r)}
-                disabled={submittingId === card.id || isRated}
-              />
-            </div>
-          </section>
-        );
-      })}
+  const distractorPool: QuizPool[] = useMemo(
+    () => (queue ?? []).map((c) => ({ id: c.id, word: c.word, translation_uz: c.translation_uz })),
+    [queue],
+  );
 
-    </div>
+  return (
+    <>
+      <div
+        className="no-scrollbar h-[calc(100dvh-72px)] w-full overflow-y-scroll overscroll-y-contain snap-y snap-mandatory scroll-smooth"
+        style={{
+          scrollSnapType: "y mandatory",
+          WebkitOverflowScrolling: "touch",
+          touchAction: quizOpen ? "none" : "pan-y",
+          overflow: quizOpen ? "hidden" : undefined,
+        }}
+      >
+        {queue.map((card) => {
+          const isFlipped = flippedIds.has(card.id);
+          const isRated = ratedIds.has(card.id);
+          return (
+            <section
+              key={card.id}
+              className="relative flex h-[calc(100dvh-72px)] w-full snap-start snap-always items-stretch justify-center px-3 py-3"
+            >
+              <div className="mx-auto flex h-full w-full max-w-md flex-col">
+                <ReviewCard
+                  card={card}
+                  flipped={isFlipped}
+                  rated={isRated}
+                  onFlip={() => flipCard(card.id)}
+                  onSpeak={() => speak(card.word)}
+                  onFav={() => toggleFav(card.id, !card.is_favorite)}
+                  onRate={(r) => rate(card.id, r)}
+                  disabled={submittingId === card.id || isRated}
+                />
+              </div>
+            </section>
+          );
+        })}
+      </div>
+
+      {quizOpen && recentBatch.length > 0 && (
+        <QuizGate
+          pool={recentBatch.slice(-5)}
+          distractorPool={distractorPool}
+          onPass={() => {
+            setQuizOpen(false);
+            setRecentBatch([]);
+          }}
+        />
+      )}
+    </>
   );
 }
 
@@ -399,10 +434,9 @@ function RateBtn({
     <button
       onClick={() => onClick(rating)}
       disabled={disabled}
-      className={`flex flex-col items-center justify-center rounded-2xl border px-2 py-2.5 text-center transition active:scale-95 disabled:opacity-50 ${tone[rating]}`}
+      className={`flex items-center justify-center rounded-2xl border px-2 py-3 text-center transition active:scale-95 disabled:opacity-50 ${tone[rating]}`}
     >
       <span className="text-[13px] font-bold leading-none">{RATING_LABEL_UZ[rating]}</span>
-      <span className="mt-1 text-[9px] font-medium opacity-80">{RATING_INTERVAL_LABEL_UZ[rating]}</span>
     </button>
   );
 }
