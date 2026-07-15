@@ -175,7 +175,7 @@ function Profile() {
             </div>
 
             {/* Accuracy + Reviews today (dual rings) */}
-            <div className="mt-3 grid grid-cols-2 gap-2.5">
+            <div className="mt-3 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
               <RingCard
                 label="Aniqlik"
                 value={stats.avg}
@@ -192,19 +192,15 @@ function Profile() {
                 color="var(--brand-2)"
                 icon={CalendarDays}
               />
-            </div>
-
-            {/* Learning time */}
-            <div className="mt-3 grid grid-cols-2 gap-2.5">
-              <TimeCard icon={Clock} label="Bugun o'qildi" seconds={stats.todaySeconds} />
-              <TimeCard icon={Sparkles} label="Umumiy vaqt" seconds={stats.totalSeconds} />
+              <TimeCardWrapped icon={Clock} label="Bugun o'qildi" seconds={stats.todaySeconds} />
+              <TimeCardWrapped icon={Sparkles} label="Umumiy vaqt" seconds={stats.totalSeconds} />
             </div>
 
             {/* Mastery breakdown */}
             <div className="mt-3 rounded-3xl border border-white/15 bg-white/[0.06] p-4 backdrop-blur-xl">
-              <div className="mb-3 flex items-center justify-between">
-                <p className="text-sm font-semibold">O'zlashtirish darajasi</p>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <p className="truncate text-sm font-semibold">O'zlashtirish darajasi</p>
+                <TrendingUp className="h-4 w-4 shrink-0 text-muted-foreground" />
               </div>
               <MasteryBar
                 newCount={stats.newCount}
@@ -219,7 +215,7 @@ function Profile() {
             </div>
 
             {/* Grid stats */}
-            <div className="mt-3 grid grid-cols-2 gap-2.5">
+            <div className="mt-3 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
               <Stat icon={BookOpen} label="Jami so'zlar" value={stats.totalWords} />
               <Stat icon={Heart} label="Saqlangan" value={stats.favorites} />
               <Stat icon={Trophy} label="Jami takrorlar" value={stats.totalReviews} />
@@ -232,6 +228,7 @@ function Profile() {
           </>
         )}
       </div>
+
 
       <div
         className="fixed inset-x-0 z-40 px-4"
