@@ -128,7 +128,7 @@ function Profile() {
   };
 
   return (
-    <div ref={scrollRef} className="relative h-[100dvh] overflow-y-auto overscroll-contain bg-background pb-[calc(96px+env(safe-area-inset-bottom))]">
+    <div ref={scrollRef} className="relative h-[100dvh] w-full overflow-x-hidden overflow-y-auto overscroll-contain bg-background pb-[calc(96px+env(safe-area-inset-bottom))]">
       {Indicator}
       <div className="pointer-events-none fixed -top-24 -left-16 h-[320px] w-[320px] rounded-full bg-[oklch(0.85_0.18_85_/_0.18)] blur-3xl" />
       <div className="pointer-events-none fixed -bottom-24 -right-16 h-[340px] w-[340px] rounded-full bg-[oklch(0.45_0.18_280_/_0.25)] blur-3xl" />
