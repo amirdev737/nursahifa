@@ -234,7 +234,7 @@ function Profile() {
         className="fixed inset-x-0 z-40 px-4"
         style={{ bottom: "calc(72px + env(safe-area-inset-bottom))" }}
       >
-        <div className="mx-auto max-w-md">
+        <div className="mx-auto max-w-md sm:max-w-xl md:max-w-2xl lg:max-w-3xl sm:px-2">
           <button
             onClick={signOut}
             className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/[0.08] py-3 text-sm font-semibold text-foreground shadow-glow backdrop-blur-xl transition hover:bg-white/[0.14] active:scale-[0.98]"
