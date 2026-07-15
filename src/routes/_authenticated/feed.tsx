@@ -54,6 +54,8 @@ function Feed() {
   const [reviewed, setReviewed] = useState(0);
   const [submittingId, setSubmittingId] = useState<string | null>(null);
   const [lastTick, setLastTick] = useState<number>(() => Date.now());
+  const [recentBatch, setRecentBatch] = useState<QuizPool[]>([]);
+  const [quizOpen, setQuizOpen] = useState(false);
 
   const loadAll = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
