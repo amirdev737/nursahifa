@@ -192,8 +192,8 @@ function Profile() {
                 color="var(--brand-2)"
                 icon={CalendarDays}
               />
-              <TimeCardWrapped icon={Clock} label="Bugun o'qildi" seconds={stats.todaySeconds} />
-              <TimeCardWrapped icon={Sparkles} label="Umumiy vaqt" seconds={stats.totalSeconds} />
+              <TimeCard icon={Clock} label="Bugun o'qildi" seconds={stats.todaySeconds} />
+              <TimeCard icon={Sparkles} label="Umumiy vaqt" seconds={stats.totalSeconds} />
             </div>
 
             {/* Mastery breakdown */}
