@@ -8,9 +8,10 @@ import {
 } from "lucide-react";
 import type { WordCard } from "@/components/Flashcard";
 import {
-  type Rating, RATING_LABEL_UZ, RATING_INTERVAL_LABEL_UZ,
+  type Rating, RATING_LABEL_UZ,
   computeNextReview, nextMasteryLevel,
 } from "@/lib/srs";
+import { QuizGate, type QuizPool } from "@/components/QuizGate";
 
 export const Route = createFileRoute("/_authenticated/feed")({
   head: () => ({ meta: [{ title: "Bugungi darsim — VocabFlow" }] }),
