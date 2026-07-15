@@ -169,6 +169,16 @@ function Feed() {
           : s.masteredCount,
       dueToday: Math.max(0, s.dueToday - 1),
     } : s);
+
+    // Track batch of last 5 for quiz gate
+    setRecentBatch((prev) => {
+      const next = [...prev, { id: card.id, word: card.word, translation_uz: card.translation_uz }];
+      if (next.length >= 5) {
+        setQuizOpen(true);
+      }
+      return next;
+    });
+
     setSubmittingId(null);
   }, [queue, userId, submittingId, ratedIds, lastTick]);
 
