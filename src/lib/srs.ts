@@ -15,12 +15,6 @@ export const RATING_LABEL_UZ: Record<Rating, string> = {
   easy: "Oson",
 };
 
-export const RATING_INTERVAL_LABEL_UZ: Record<Rating, string> = {
-  again: "10 daqiqa",
-  hard: "1 kun",
-  good: "3 kun",
-  easy: "7 kun",
-};
 
 export function nextMasteryLevel(current: string, rating: Rating, newReviewCount: number): string {
   if (rating === "again") return "learning";
