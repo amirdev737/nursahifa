@@ -400,10 +400,9 @@ function RateBtn({
     <button
       onClick={() => onClick(rating)}
       disabled={disabled}
-      className={`flex flex-col items-center justify-center rounded-2xl border px-2 py-2.5 text-center transition active:scale-95 disabled:opacity-50 ${tone[rating]}`}
+      className={`flex items-center justify-center rounded-2xl border px-2 py-3 text-center transition active:scale-95 disabled:opacity-50 ${tone[rating]}`}
     >
       <span className="text-[13px] font-bold leading-none">{RATING_LABEL_UZ[rating]}</span>
-      <span className="mt-1 text-[9px] font-medium opacity-80">{RATING_INTERVAL_LABEL_UZ[rating]}</span>
     </button>
   );
 }
