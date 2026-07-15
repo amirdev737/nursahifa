@@ -133,7 +133,7 @@ function Profile() {
       <div className="pointer-events-none fixed -top-24 -left-16 h-[320px] w-[320px] rounded-full bg-[oklch(0.85_0.18_85_/_0.18)] blur-3xl" />
       <div className="pointer-events-none fixed -bottom-24 -right-16 h-[340px] w-[340px] rounded-full bg-[oklch(0.45_0.18_280_/_0.25)] blur-3xl" />
 
-      <div className="relative mx-auto flex max-w-md flex-col px-4 pt-4">
+      <div className="relative mx-auto flex w-full max-w-md flex-col px-4 pt-4 sm:max-w-xl md:max-w-2xl lg:max-w-3xl sm:px-6">
         <div className="flex items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
             <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-gradient-brand text-xl font-bold text-white shadow-glow">
