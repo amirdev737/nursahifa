@@ -211,6 +211,11 @@ function Feed() {
     </div>
   ), [stats?.dueToday, reviewed]);
 
+  const distractorPool: QuizPool[] = useMemo(
+    () => (queue ?? []).map((c) => ({ id: c.id, word: c.word, translation_uz: c.translation_uz })),
+    [queue],
+  );
+
   if (queue === null) {
     return (
       <div className="flex h-[calc(100dvh-72px)] items-center justify-center">
@@ -237,11 +242,6 @@ function Feed() {
       </div>
     );
   }
-
-  const distractorPool: QuizPool[] = useMemo(
-    () => (queue ?? []).map((c) => ({ id: c.id, word: c.word, translation_uz: c.translation_uz })),
-    [queue],
-  );
 
   return (
     <>
